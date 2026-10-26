@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "target_id": "original-demo-remote-v1",
+  "demo": true,
+  "image": "demo-target.png",
+  "width_pixels": 400,
+  "height_pixels": 640,
+  "physical_width_meters": 0.16,
+  "display": [0.13, 0.14, 0.87, 0.38],
+  "buttons": {
+    "power": [0.18, 0.45, 0.82, 0.55],
+    "mode": [0.18, 0.61, 0.82, 0.71],
+    "temperature": [0.18, 0.77, 0.82, 0.87]
+  },
+  "notice": "Original synthetic artwork. Not a Samsung reference. Coordinates are invalid for real devices."
+}

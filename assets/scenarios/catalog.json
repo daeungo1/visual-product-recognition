@@ -1,0 +1,66 @@
+{
+  "demo": true,
+  "notice": "직접 제작한 가상 제품 패널입니다. 삼성 제품·공식 조작 절차·실제 고장 진단이 아닙니다.",
+  "scenarios": [
+    {
+      "id": "aircon",
+      "product": "에어컨",
+      "issue": "시원한 바람이 나오지 않아요",
+      "summary": "가상 패널의 전원·냉방 모드·설정 표시를 차례로 확인합니다.",
+      "target_id": "synthetic-aircon-panel-v1",
+      "image": "scenarios/aircon.png",
+      "reference_width_m": 0.16,
+      "display": [0.10, 0.18, 0.90, 0.38],
+      "controls": [
+        {"id": "power", "label": "POWER", "rect": [0.15, 0.44, 0.85, 0.54], "initial": "POWER OFF", "expected": "POWER ON", "instruction": "PC 합성 에어컨의 POWER 영역을 눌러 POWER ON 표시를 확인하세요."},
+        {"id": "mode", "label": "MODE", "rect": [0.15, 0.60, 0.85, 0.70], "initial": "MODE FAN", "expected": "MODE COOL", "instruction": "PC 합성 에어컨의 MODE 영역을 눌러 MODE COOL 표시를 확인하세요."},
+        {"id": "temperature", "label": "TEMP", "rect": [0.15, 0.76, 0.85, 0.86], "initial": "TEMP 26", "expected": "TEMP 24", "instruction": "PC 합성 에어컨의 TEMP 영역을 눌러 TEMP 24 표시를 확인하세요. 실제 냉방 성능 판정은 아닙니다."}
+      ]
+    },
+    {
+      "id": "washer",
+      "product": "세탁기",
+      "issue": "세탁이 시작되지 않아요",
+      "summary": "가상 전원·문 상태·시작 준비 표시를 확인합니다. 실제 문 잠금이나 운전은 검증하지 않습니다.",
+      "target_id": "synthetic-washer-panel-v1",
+      "image": "scenarios/washer.png",
+      "reference_width_m": 0.16,
+      "display": [0.10, 0.18, 0.90, 0.38],
+      "controls": [
+        {"id": "power", "label": "POWER", "rect": [0.15, 0.44, 0.85, 0.54], "initial": "POWER OFF", "expected": "POWER ON", "instruction": "PC 합성 세탁기의 POWER 영역을 눌러 POWER ON 표시를 확인하세요."},
+        {"id": "door", "label": "DOOR", "rect": [0.15, 0.60, 0.85, 0.70], "initial": "DOOR OPEN", "expected": "DOOR CLOSED", "instruction": "PC의 DOOR 상태 시뮬레이션을 눌러 DOOR CLOSED 표시를 확인하세요. 실제 문 잠김을 보증하지 않습니다."},
+        {"id": "ready", "label": "READY", "rect": [0.15, 0.76, 0.85, 0.86], "initial": "READY NO", "expected": "READY YES", "instruction": "PC의 READY 상태 시뮬레이션을 눌러 READY YES 표시를 확인하세요. 실제 세탁기를 가동하지 마세요."}
+      ]
+    },
+    {
+      "id": "refrigerator",
+      "product": "냉장고",
+      "issue": "냉기가 약하게 느껴져요",
+      "summary": "가상 패널의 전원·운전 모드·온도 표시를 확인합니다. 음식 안전이나 실제 냉각 성능은 판정하지 않습니다.",
+      "target_id": "synthetic-refrigerator-panel-v1",
+      "image": "scenarios/refrigerator.png",
+      "reference_width_m": 0.16,
+      "display": [0.10, 0.18, 0.90, 0.38],
+      "controls": [
+        {"id": "power", "label": "POWER", "rect": [0.15, 0.44, 0.85, 0.54], "initial": "POWER OFF", "expected": "POWER ON", "instruction": "PC 합성 냉장고의 POWER 영역을 눌러 POWER ON 표시를 확인하세요."},
+        {"id": "mode", "label": "MODE", "rect": [0.15, 0.60, 0.85, 0.70], "initial": "MODE DEMO", "expected": "MODE COOL", "instruction": "PC 합성 냉장고의 MODE 영역을 눌러 MODE COOL 표시를 확인하세요. 실제 냉장고의 모드 해제 방법은 모델마다 다릅니다."},
+        {"id": "temperature", "label": "TEMP", "rect": [0.15, 0.76, 0.85, 0.86], "initial": "TEMP 8", "expected": "TEMP 3", "instruction": "PC 합성 냉장고의 TEMP 영역을 눌러 TEMP 3 표시를 확인하세요. 이 숫자는 가상 실습값이며 실제 권장 온도가 아닙니다."}
+      ]
+    },
+    {
+      "id": "monitor",
+      "product": "모니터",
+      "issue": "화면에 신호가 없어요",
+      "summary": "가상 전원·입력 소스·신호 상태를 확인합니다. 실제 케이블 연결이나 하드웨어 고장을 판정하지 않습니다.",
+      "target_id": "synthetic-monitor-panel-v1",
+      "image": "scenarios/monitor.png",
+      "reference_width_m": 0.16,
+      "display": [0.10, 0.18, 0.90, 0.38],
+      "controls": [
+        {"id": "power", "label": "POWER", "rect": [0.15, 0.44, 0.85, 0.54], "initial": "POWER OFF", "expected": "POWER ON", "instruction": "PC 합성 모니터의 POWER 영역을 눌러 POWER ON 표시를 확인하세요."},
+        {"id": "input", "label": "INPUT", "rect": [0.15, 0.60, 0.85, 0.70], "initial": "INPUT DP", "expected": "INPUT HDMI", "instruction": "PC 합성 모니터의 INPUT 영역을 눌러 INPUT HDMI 표시를 확인하세요. 실제 제품의 입력 메뉴 위치는 모델별 확인이 필요합니다."},
+        {"id": "signal", "label": "SIGNAL", "rect": [0.15, 0.76, 0.85, 0.86], "initial": "SIGNAL NONE", "expected": "SIGNAL OK", "instruction": "PC의 SIGNAL 상태 시뮬레이션을 눌러 SIGNAL OK 표시를 확인하세요. 실제 영상 복구를 입증한 결과는 아닙니다."}
+      ]
+    }
+  ]
+}

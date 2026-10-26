@@ -1,0 +1,15 @@
+{
+  "$schema":"https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion":"1.0.0.0",
+  "parameters":{
+    "appName":{"value":"ca-svg-dev-4ca0"},
+    "environmentName":{"value":"cae-svg-private-4ca0"},
+    "identityName":{"value":"id-svg-dev-4ca0"},
+    "registryName":{"value":"crsvgdev4ca0"},
+    "cosmosAccountName":{"value":"cosmos-svg-dev-4ca0"},
+    "storageAccountName":{"value":"stsvgdev4ca0"},
+    "searchName":{"value":"srch-svg-dev-4ca0"},
+    "foundryAccountName":{"value":"ai-svg-dev-4ca0"},
+    "appInsightsName":{"value":"appi-svg-dev-4ca0"}
+  }
+}

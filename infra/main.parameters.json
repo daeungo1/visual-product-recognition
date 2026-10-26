@@ -1,0 +1,30 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "environmentName": {
+      "value": "svg-dev-4ca0"
+    },
+    "location": {
+      "value": "japaneast"
+    },
+    "sessionId": {
+      "value": "4ca09c3a-5987-411f-b048-c102cd4853f2"
+    },
+    "deployedBy": {
+      "value": "MOD Administrator"
+    },
+    "createdAt": {
+      "value": "2026-10-22T14:15:39.9654067+09:00"
+    },
+    "deployerObjectId": {
+      "value": "8e562f00-a551-497c-8bc4-d1c5e131c916"
+    },
+    "shouldDeployApplication": {
+      "value": false
+    },
+    "verifyModelCapacity": {
+      "value": 50
+    }
+  }
+}

@@ -1,0 +1,59 @@
+name: Validate app and API
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Install declared Android SDK
+        run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.11.8'
+          python-version: '3.11'
+      - name: Restore locked API test dependencies
+        run: uv sync --project .\server --frozen --extra cloud
+      - name: Test API and evaluation
+        run: |
+          Set-Location .\server
+          uv run --no-sync pytest tests ..\eval\tests
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          uv run --no-sync ruff check src tests ..\pipeline ..\eval
+      - name: Test, lint and compile Android mock-up
+        run: |
+          .\gradlew.bat --no-daemon --max-workers=2 --console=plain `
+            '-Pkotlin.compiler.execution.strategy=in-process' `
+            '-PVISUAL_GUIDE_API_BASE_URL=https://ca-svg-dev-4ca0.whiterock-2d71d661.japaneast.azurecontainerapps.io' `
+            :core:jvmTest :app-android:testDebugUnitTest :app-android:lintDebug :app-android:assembleDebug
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-reports
+          path: |
+            core\build\test-results
+            app-android\build\test-results
+            app-android\build\reports\lint-results-debug.*
+      - name: Upload compiled mock-up
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-guide-debug-apk
+          path: app-android\build\outputs\apk\debug\app-android-debug.apk

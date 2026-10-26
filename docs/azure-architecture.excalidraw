@@ -1,0 +1,168 @@
+{
+  "type": "excalidraw",
+  "version": 2,
+  "source": "https://excalidraw.com",
+  "elements": [
+    {
+      "id": "architecture-title", "type": "text",
+      "x": 40, "y": 30, "width": 1120, "height": 38,
+      "text": "Visual Guide: native runtime + Azure services",
+      "originalText": "Visual Guide: native runtime + Azure services",
+      "fontSize": 28, "fontFamily": 5, "lineHeight": 1.25,
+      "textAlign": "left", "verticalAlign": "top",
+      "strokeColor": "#17212b", "backgroundColor": "transparent"
+    },
+    {
+      "id": "architecture-status", "type": "text",
+      "x": 40, "y": 85, "width": 1100, "height": 30,
+      "text": "Deployed Azure topology. Synthetic fixture only; Galaxy and real Samsung measurements pending.",
+      "originalText": "Deployed Azure topology. Synthetic fixture only; Galaxy and real Samsung measurements pending.",
+      "fontSize": 18, "fontFamily": 5, "lineHeight": 1.25,
+      "textAlign": "left", "verticalAlign": "top",
+      "strokeColor": "#a84b0c", "backgroundColor": "transparent"
+    },
+    {
+      "id": "azure-boundary", "type": "rectangle",
+      "x": 410, "y": 135, "width": 760, "height": 650,
+      "strokeColor": "#8796a5", "backgroundColor": "#f5f7f8",
+      "fillStyle": "solid", "strokeWidth": 2, "strokeStyle": "dashed",
+      "roughness": 0, "roundness": {"type": 3}
+    },
+    {
+      "id": "azure-boundary-title", "type": "text",
+      "x": 440, "y": 155, "width": 690, "height": 32,
+      "text": "AZURE: Japan East / rg-svg-dev-4ca0",
+      "originalText": "AZURE: Japan East / rg-svg-dev-4ca0",
+      "fontSize": 20, "fontFamily": 5, "lineHeight": 1.25,
+      "textAlign": "left", "verticalAlign": "top",
+      "strokeColor": "#1d4e89", "backgroundColor": "transparent"
+    },
+    {
+      "id": "galaxy-box", "type": "rectangle",
+      "x": 40, "y": 230, "width": 290, "height": 330,
+      "strokeColor": "#0e7c8c", "backgroundColor": "#e3f3f5",
+      "fillStyle": "solid", "strokeWidth": 2, "strokeStyle": "solid",
+      "roughness": 0, "roundness": {"type": 3}
+    },
+    {
+      "id": "galaxy-label", "type": "text",
+      "x": 62, "y": 250, "width": 245, "height": 285,
+      "text": "GALAXY ANDROID\n\nCompose + ARCore\nKorean OCR + TTS\nPure Kotlin state\n\nFull tracking only\nHide on target loss\nManual vs auto events\n\nNo per-frame upload",
+      "originalText": "GALAXY ANDROID\n\nCompose + ARCore\nKorean OCR + TTS\nPure Kotlin state\n\nFull tracking only\nHide on target loss\nManual vs auto events\n\nNo per-frame upload",
+      "fontSize": 19, "fontFamily": 5, "lineHeight": 1.25,
+      "textAlign": "left", "verticalAlign": "top",
+      "strokeColor": "#17212b", "backgroundColor": "transparent"
+    },
+    {
+      "id": "api-box", "type": "rectangle",
+      "x": 450, "y": 240, "width": 270, "height": 180,
+      "strokeColor": "#1d4e89", "backgroundColor": "#e6eef8",
+      "fillStyle": "solid", "strokeWidth": 2, "strokeStyle": "solid",
+      "roughness": 0, "roundness": {"type": 3}
+    },
+    {
+      "id": "api-label", "type": "text",
+      "x": 470, "y": 260, "width": 230, "height": 145,
+      "text": "VNET-INTEGRATED ACA\n\nFastAPI + CPU SigLIP2\n2 vCPU / 4 GiB\nOrdered session events\nHTTPS + one-use pairing",
+      "originalText": "VNET-INTEGRATED ACA\n\nFastAPI + CPU SigLIP2\n2 vCPU / 4 GiB\nOrdered session events\nHTTPS + one-use pairing",
+      "fontSize": 18, "fontFamily": 5, "lineHeight": 1.25,
+      "textAlign": "left", "verticalAlign": "top",
+      "strokeColor": "#17212b", "backgroundColor": "transparent"
+    },
+    {
+      "id": "ai-box", "type": "rectangle",
+      "x": 820, "y": 210, "width": 310, "height": 160,
+      "strokeColor": "#7950a6", "backgroundColor": "#f1eafa",
+      "fillStyle": "solid", "strokeWidth": 2, "strokeStyle": "solid",
+      "roughness": 0, "roundness": {"type": 3}
+    },
+    {
+      "id": "ai-label", "type": "text",
+      "x": 840, "y": 230, "width": 270, "height": 130,
+      "text": "SEARCH + AZURE OPENAI\n\nAI Search Basic / 768-D\nLuna: pass / fail / unsure\nTerra: draft-only authoring\nGlobalStandard inference",
+      "originalText": "SEARCH + AZURE OPENAI\n\nAI Search Basic / 768-D\nLuna: pass / fail / unsure\nTerra: draft-only authoring\nGlobalStandard inference",
+      "fontSize": 18, "fontFamily": 5, "lineHeight": 1.25,
+      "textAlign": "left", "verticalAlign": "top",
+      "strokeColor": "#17212b", "backgroundColor": "transparent"
+    },
+    {
+      "id": "data-box", "type": "rectangle",
+      "x": 820, "y": 440, "width": 310, "height": 170,
+      "strokeColor": "#2b8a3e", "backgroundColor": "#ebf7ed",
+      "fillStyle": "solid", "strokeWidth": 2, "strokeStyle": "solid",
+      "roughness": 0, "roundness": {"type": 3}
+    },
+    {
+      "id": "data-label", "type": "text",
+      "x": 840, "y": 460, "width": 270, "height": 140,
+      "text": "PRIVATE COSMOS + BLOB\n\nPublic networks disabled\nPrivate Endpoints + DNS\nETag session updates\nApproved reference assets",
+      "originalText": "PRIVATE COSMOS + BLOB\n\nPublic networks disabled\nPrivate Endpoints + DNS\nETag session updates\nApproved reference assets",
+      "fontSize": 18, "fontFamily": 5, "lineHeight": 1.25,
+      "textAlign": "left", "verticalAlign": "top",
+      "strokeColor": "#17212b", "backgroundColor": "transparent"
+    },
+    {
+      "id": "offline-box", "type": "rectangle",
+      "x": 450, "y": 650, "width": 680, "height": 100,
+      "strokeColor": "#9c7b16", "backgroundColor": "#fff5d6",
+      "fillStyle": "solid", "strokeWidth": 2, "strokeStyle": "solid",
+      "roughness": 0, "roundness": {"type": 3}
+    },
+    {
+      "id": "offline-label", "type": "text",
+      "x": 470, "y": 665, "width": 640, "height": 75,
+      "text": "PRIVATE SETUP JOB + REVIEWED ASSET PIPELINE\nManaged identity: prepare / activate / hash-only invites\nHuman review required; SAM 3 and CU are not deployed",
+      "originalText": "PRIVATE SETUP JOB + REVIEWED ASSET PIPELINE\nManaged identity: prepare / activate / hash-only invites\nHuman review required; SAM 3 and CU are not deployed",
+      "fontSize": 18, "fontFamily": 5, "lineHeight": 1.25,
+      "textAlign": "left", "verticalAlign": "top",
+      "strokeColor": "#17212b", "backgroundColor": "transparent"
+    },
+    {
+      "id": "mobile-to-api", "type": "arrow",
+      "x": 335, "y": 330, "width": 110, "height": 0,
+      "points": [[0, 0], [110, 0]],
+      "strokeColor": "#1971c2", "backgroundColor": "transparent",
+      "strokeWidth": 2, "strokeStyle": "solid", "roughness": 0,
+      "roundness": {"type": 2}, "startArrowhead": null, "endArrowhead": "arrow",
+      "startBinding": null, "endBinding": null
+    },
+    {
+      "id": "api-to-ai", "type": "arrow",
+      "x": 725, "y": 285, "width": 90, "height": 0,
+      "points": [[0, 0], [90, 0]],
+      "strokeColor": "#7950a6", "backgroundColor": "transparent",
+      "strokeWidth": 2, "strokeStyle": "solid", "roughness": 0,
+      "roundness": {"type": 2}, "startArrowhead": null, "endArrowhead": "arrow",
+      "startBinding": null, "endBinding": null
+    },
+    {
+      "id": "api-to-data", "type": "arrow",
+      "x": 725, "y": 380, "width": 90, "height": 135,
+      "points": [[0, 0], [35, 0], [35, 135], [90, 135]],
+      "strokeColor": "#2b8a3e", "backgroundColor": "transparent",
+      "strokeWidth": 2, "strokeStyle": "solid", "roughness": 0,
+      "roundness": {"type": 2}, "startArrowhead": null, "endArrowhead": "arrow",
+      "startBinding": null, "endBinding": null
+    },
+    {
+      "id": "offline-to-data", "type": "arrow",
+      "x": 975, "y": 645, "width": 0, "height": 30,
+      "points": [[0, 0], [0, -30]],
+      "strokeColor": "#9c7b16", "backgroundColor": "transparent",
+      "strokeWidth": 2, "strokeStyle": "solid", "roughness": 0,
+      "roundness": {"type": 2}, "startArrowhead": null, "endArrowhead": "arrow",
+      "startBinding": null, "endBinding": null
+    },
+    {
+      "id": "crosscutting-note", "type": "text",
+      "x": 40, "y": 820, "width": 1120, "height": 65,
+      "text": "API + setup managed identities | ACR immutable images | Log Analytics | VNet + NAT egress\nNo Azure keys in APK. One-time device pairing is not enterprise SSO. No per-frame server upload.",
+      "originalText": "API + setup managed identities | ACR immutable images | Log Analytics | VNet + NAT egress\nNo Azure keys in APK. One-time device pairing is not enterprise SSO. No per-frame server upload.",
+      "fontSize": 17, "fontFamily": 5, "lineHeight": 1.25,
+      "textAlign": "left", "verticalAlign": "top",
+      "strokeColor": "#566573", "backgroundColor": "transparent"
+    }
+  ],
+  "appState": {"viewBackgroundColor": "#ffffff", "gridSize": 20},
+  "files": {}
+}

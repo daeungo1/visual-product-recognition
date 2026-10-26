@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>합성 리모컨 DEMO 타깃</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 16px; font-family: system-ui, sans-serif; background: #e7edf3; color: #102030; text-align: center; }
+    h1 { font-size: 1.25rem; margin: 0 0 8px; }
+    p { max-width: 760px; margin: 8px auto; }
+    #target { position: relative; width: min(80vw, 400px); aspect-ratio: 5 / 8; margin: 16px auto; container-type: inline-size; }
+    #target img { display: block; width: 100%; height: 100%; }
+    #display { position: absolute; left: 13%; top: 14%; width: 74%; height: 24%; background: white; color: black; text-align: left; font: bold 6cqw/1.75 Arial, sans-serif; padding: 2% 3%; white-space: pre; }
+    .target-button { position: absolute; left: 18%; width: 64%; height: 10%; background: transparent; color: transparent; border: 0; cursor: pointer; padding: 0; }
+    .target-button:focus-visible { outline: 4px solid #006ac2; outline-offset: 3px; }
+    #power { top: 45%; } #mode { top: 61%; } #temperature { top: 77%; }
+    #reset { padding: 10px 20px; }
+    #error { color: #a40000; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>DEMO 전용: 합성 에어컨 리모컨</h1>
+  <p>삼성 제품이 아닙니다. Galaxy 카메라로 이 사각형 전체를 비추고, 이 화면의 버튼을 누르세요.
+    인식은 등록된 원본 그림에서만 동작합니다.</p>
+  <p><a href="https://github.com/daeungo1/visual-product-recognition/releases/latest">Galaxy 테스트 APK 설치</a>
+    · <a href="https://github.com/daeungo1/visual-product-recognition#readme">설치·페어링 안내</a>
+    · 이 페이지는 PC 타깃이며 Android 앱 화면이 아닙니다.</p>
+  <div id="target">
+    <img src="demo-target.png" alt="원본 합성 리모컨 참조 그림" id="reference">
+    <div id="display" role="status" aria-label="데모 장치 상태"></div>
+    <button id="power" class="target-button" aria-label="1 전원: 켜기/끄기"></button>
+    <button id="mode" class="target-button" aria-label="2 모드: 송풍/냉방"></button>
+    <button id="temperature" class="target-button" aria-label="3 온도: 26/25/24"></button>
+  </div>
+  <p id="error" hidden>참조 PNG가 없습니다. 프로젝트 루트에서 pipeline\Generate-DemoTarget.ps1을 실행하세요.</p>
+  <button id="reset">초기 상태로</button>
+  <p>실제 가전 제어, 실제 제품 식별, 실제 버튼 조작 검증은 구현하지 않았습니다.
+    인쇄물로는 추적만 가능하며, 상태 변경과 OCR 실습에는 이 HTML을 쓰세요.</p>
+  <script>
+    "use strict";
+    let on = false, cool = false, temperature = 26;
+    function render() {
+      document.getElementById("display").textContent =
+        `POWER ${on ? "ON" : "OFF"}\nMODE ${cool ? "COOL" : "FAN"}\nTEMP ${temperature}`;
+    }
+    document.getElementById("power").onclick = () => { on = !on; render(); };
+    document.getElementById("mode").onclick = () => { cool = !cool; render(); };
+    document.getElementById("temperature").onclick = () => {
+      temperature = temperature === 24 ? 26 : temperature - 1; render();
+    };
+    document.getElementById("reset").onclick = () => {
+      on = false; cool = false; temperature = 26; render();
+    };
+    document.getElementById("reference").onerror = () => {
+      document.getElementById("error").hidden = false;
+      document.querySelectorAll(".target-button").forEach(button => { button.disabled = true; });
+    };
+    render();
+  </script>
+</body>
+</html>

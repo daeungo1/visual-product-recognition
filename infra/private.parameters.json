@@ -1,0 +1,78 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "value": "japaneast"
+    },
+    "sessionId": {
+      "value": "4ca09c3a-5987-411f-b048-c102cd4853f2"
+    },
+    "deployedBy": {
+      "value": "MOD Administrator"
+    },
+    "createdAt": {
+      "value": "2026-10-22T18:18:42.336+09:00"
+    },
+    "cosmosAccountName": {
+      "value": "cosmos-svg-dev-4ca0"
+    },
+    "storageAccountName": {
+      "value": "stsvgdev4ca0"
+    },
+    "registryName": {
+      "value": "crsvgdev4ca0"
+    },
+    "searchName": {
+      "value": "srch-svg-dev-4ca0"
+    },
+    "foundryAccountName": {
+      "value": "ai-svg-dev-4ca0"
+    },
+    "appIdentityName": {
+      "value": "id-svg-dev-4ca0"
+    },
+    "logAnalyticsName": {
+      "value": "log-svg-dev-4ca0"
+    },
+    "appInsightsName": {
+      "value": "appi-svg-dev-4ca0"
+    },
+    "vnetName": {
+      "value": "vnet-svg-dev-4ca0"
+    },
+    "privateEnvironmentName": {
+      "value": "cae-svg-private-4ca0"
+    },
+    "appName": {
+      "value": "ca-svg-dev-4ca0"
+    },
+    "bootstrapJobName": {
+      "value": "job-svg-private-4ca0"
+    },
+    "setupIdentityName": {
+      "value": "id-svg-setup-4ca0"
+    },
+    "vnetAddressSpace": {
+      "value": "10.48.0.0/16"
+    },
+    "acaSubnetName": {
+      "value": "snet-aca-svg-dev-4ca0"
+    },
+    "acaSubnetPrefix": {
+      "value": "10.48.0.0/23"
+    },
+    "endpointSubnetName": {
+      "value": "snet-endpoints-svg-dev-4ca0"
+    },
+    "endpointSubnetPrefix": {
+      "value": "10.48.2.0/24"
+    },
+    "shouldDeployApplication": {
+      "value": false
+    },
+    "bootstrapOperation": {
+      "value": "prepare"
+    }
+  }
+}

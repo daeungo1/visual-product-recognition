@@ -1,0 +1,15 @@
+**
+!Dockerfile
+!.dockerignore
+!pyproject.toml
+!src/
+!src/**
+!runtime_bootstrap/
+!runtime_bootstrap/assets/
+!runtime_bootstrap/assets/demo-target.png
+!runtime_bootstrap/assets/panel_map.json
+!runtime_bootstrap/pipeline/
+!runtime_bootstrap/pipeline/provision_cloud.py
+src/**/__pycache__/
+src/**/*.pyc
+src/**/*.env

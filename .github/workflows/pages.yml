@@ -1,0 +1,49 @@
+name: Publish mock-up target
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - assets/**
+      - .github/workflows/pages.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  target:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/configure-pages@v5
+      - name: Stage only the synthetic target
+        shell: python
+        run: |
+          from pathlib import Path
+          import shutil
+          output = Path("_site")
+          output.mkdir()
+          shutil.copyfile(Path("assets").joinpath("product-demo.html"), output.joinpath("index.html"))
+          shutil.copyfile(Path("assets").joinpath("demo-target.html"), output.joinpath("demo-target.html"))
+          shutil.copyfile(Path("assets").joinpath("demo-target.png"), output.joinpath("demo-target.png"))
+          output.joinpath("scenarios").mkdir()
+          for name in ("catalog.json", "aircon.png", "washer.png", "refrigerator.png", "monitor.png"):
+              shutil.copyfile(Path("assets").joinpath("scenarios", name), output.joinpath("scenarios", name))
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+      - name: Deploy target
+        id: deployment
+        uses: actions/deploy-pages@v4
