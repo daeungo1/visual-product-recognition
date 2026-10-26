@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>에어컨·모니터 실모델 사진 참조 DEMO</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: auto; max-width: 1040px; padding: 20px; font-family: system-ui, sans-serif; color: #142333; background: #eaf0f5; }
+    .notice { border-left: 5px solid #b45b00; background: #fff7e8; padding: 16px; }
+    main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; }
+    section { min-width: 0; background: white; border-radius: 12px; padding: 16px; }
+    button, select, input { font: inherit; margin: 8px 0; max-width: 100%; }
+    button, select { padding: 10px; }
+    label { display: block; margin: 12px 0; }
+    a { color: #005baf; overflow-wrap: anywhere; }
+    #preview { position: relative; }
+    #photo { width: 100%; max-height: 600px; object-fit: contain; display: block; }
+    #overlay { padding: 12px; border: 3px solid #e8ac00; background: #fff9d9; }
+    #message { color: #a40000; }
+    [hidden] { display: none !important; }
+    @media (max-width: 720px) { main { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <h1>에어컨·모니터 실모델 사진 참조 DEMO</h1>
+  <p class="notice">2026 제품군의 모델별 공식 출처를 연결하는 사진 기반 수동 확인 목업입니다.
+    카메라·자동 모델 인식·AR 정합·OCR·고장 진단은 수행하지 않습니다.
+    공식 사진의 공개 APK/웹 재배포 허가는 확인되지 않아 사진을 내장하지 않았습니다.
+    원본 사이트에서 사진을 확인하고 사용권 있는 파일만 불러오세요. 사진은 서버에 전송하거나 저장하지 않습니다.</p>
+  <p><a href="product-demo.html">4종 합성 카메라 타깃</a> ·
+    <a href="https://github.com/daeungo1/visual-product-recognition/releases/latest">Galaxy APK·설치 안내</a></p>
+  <label for="model">참조 모델</label>
+  <select id="model" disabled><option>출처 카탈로그 읽는 중</option></select>
+  <p id="message" role="alert"></p>
+  <main>
+    <section aria-label="로컬 사진">
+      <h2 id="title">모델 준비 중</h2>
+      <p><a id="source" target="_blank" rel="noopener noreferrer">공식 사진 원본 페이지 열기</a></p>
+      <label for="file">사용권 있는 로컬 사진 (JPEG/PNG, 최대 10 MiB·20 MP)</label>
+      <input id="file" type="file" accept="image/jpeg,image/png" disabled>
+      <div id="preview">
+        <img id="photo" alt="사용자가 불러온 사진 · 모델 자동 검증 안 됨" hidden>
+        <div id="overlay" hidden>
+          <strong>사진 참조 안내 카드 · AR 추적 아님</strong>
+          <p id="issue"></p>
+          <p>실제 버튼 좌표·조작 순서는 미검수이므로 표시하지 않습니다.
+            공식 모델 지원에서 사용 설명서와 문제 해결 자료를 확인하세요.</p>
+        </div>
+      </div>
+    </section>
+    <section aria-label="수동 모델 및 결과 확인">
+      <h2>모델 확인 → 증상 → 공식 지원 → 수동 결과</h2>
+      <label><input id="rights" type="checkbox" disabled> 이 사진의 사용권을 확인했습니다.</label>
+      <label><input id="identity" type="checkbox" disabled> 사진의 모델명이 선택 모델과 일치함을 직접 확인했습니다. 자동 인식 결과가 아닙니다.</label>
+      <button id="start" disabled>사진 참조 안내 시작</button>
+      <button id="reject" disabled>다른 모델 또는 모델을 모르겠어요</button>
+      <p><a id="support" target="_blank" rel="noopener noreferrer">선택 모델 공식 지원 열기</a></p>
+      <label for="outcome">직접 확인한 결과 (자동 성공 판정 아님)</label>
+      <select id="outcome" disabled>
+        <option value="">결과 선택 전 · 미판정</option>
+        <option value="unresolved">미해결</option>
+        <option value="uncertain">판정 불가</option>
+        <option value="reported-resolved">사용자가 해결되었다고 보고</option>
+      </select>
+      <p id="result" role="status">미판정</p>
+      <button id="reset" disabled>사진·확인·결과 지우기</button>
+      <p>발열·연기·누수 등 위험 징후가 있으면 사용을 중단하고 공식 지원을 이용하세요.
+        이 목업은 실제 제품의 안전·냉방·영상 복구를 보증하지 않습니다.</p>
+    </section>
+  </main>
+  <script>
+    "use strict";
+    const el = id => document.getElementById(id);
+    let products = [], active = null, photoReady = false, started = false, objectUrl = null, generation = 0, loadTimer = null;
+    function render() {
+      el("rights").disabled = el("identity").disabled = !photoReady;
+      el("start").disabled = !photoReady || !el("rights").checked || !el("identity").checked;
+      el("reject").disabled = !photoReady;
+      el("overlay").hidden = !started;
+      el("outcome").disabled = !started;
+    }
+    function clear() {
+      generation++;
+      clearTimeout(loadTimer);
+      el("photo").onload = el("photo").onerror = null;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      objectUrl = null; photoReady = false; started = false;
+      el("photo").removeAttribute("src"); el("photo").hidden = true;
+      el("file").value = ""; el("rights").checked = el("identity").checked = false;
+      el("outcome").value = ""; el("result").textContent = "미판정"; el("message").textContent = "";
+      render();
+    }
+    function selectModel() {
+      clear();
+      active = products.find(p => p.model === el("model").value);
+      el("title").textContent = `${active.category} · ${active.model} · ${active.name}`;
+      el("source").href = active.photo_source_url;
+      el("support").href = active.support_url;
+      el("issue").textContent = active.issue;
+    }
+    el("model").onchange = selectModel;
+    el("file").onchange = () => {
+      const file = el("file").files[0];
+      clear();
+      if (!file) return;
+      if (!["image/jpeg", "image/png"].includes(file.type) || file.size > 10 * 1024 * 1024) {
+        el("message").textContent = "JPEG/PNG 10 MiB 이하 파일만 불러올 수 있습니다."; return;
+      }
+      const current = generation, url = URL.createObjectURL(file);
+      objectUrl = url;
+      const image = el("photo");
+      function fail(message) {
+        if (current !== generation) return;
+        clear(); el("message").textContent = `사진 읽기 실패: ${message}`;
+      }
+      image.onload = () => {
+        if (current !== generation || image.currentSrc !== url) return;
+        if (image.naturalWidth * image.naturalHeight > 20000000) { fail("사진 해상도는 20 MP 이하여야 합니다."); return; }
+        clearTimeout(loadTimer); image.hidden = false; photoReady = true; render();
+      };
+      image.onerror = () => fail("손상되었거나 해석할 수 없는 이미지입니다.");
+      loadTimer = setTimeout(() => fail("시간이 초과되었습니다. 파일을 다시 선택해 주세요."), 15000);
+      image.src = url;
+    };
+    for (const id of ["rights", "identity"]) el(id).onchange = () => {
+      started = false; el("outcome").value = ""; el("result").textContent = "미판정"; render();
+    };
+    el("start").onclick = () => { if (!el("start").disabled) { started = true; render(); } };
+    el("reject").onclick = () => { clear(); el("message").textContent = "모델 미확인: 안내 차단. 사진만으로 모델을 확정하지 않습니다."; };
+    el("reset").onclick = clear;
+    el("outcome").onchange = () => {
+      if (!started) return;
+      const value = el("outcome").value;
+      el("result").textContent = value ? `사용자 수동 보고: ${el("outcome").selectedOptions[0].textContent} · 실제 고장 해결 자동 검증 없음` : "미판정";
+    };
+    fetch("products/catalog.json").then(r => {
+      if (!r.ok) throw new Error(`카탈로그 HTTP ${r.status}`);
+      return r.json();
+    }).then(data => {
+      if (data.mode !== "local-photo-reference" || data.bundled_third_party_photos !== false ||
+          data.products.length !== 2 || new Set(data.products.map(p => p.model)).size !== 2) {
+        throw new Error("사진 참조 카탈로그 형식이 올바르지 않습니다.");
+      }
+      for (const product of data.products) {
+        for (const key of ["photo_source_url", "support_url"]) {
+          const url = new URL(product[key]);
+          if (url.origin !== "https://www.samsung.com" || !url.pathname.includes(product.model)) throw new Error("모델 출처가 일치하지 않습니다.");
+        }
+        if (product.review_status !== "reference-only" || ["controls", "target_id", "steps", "image"].some(k => k in product)) throw new Error("미검수 절차·사진 게시를 허용하지 않습니다.");
+      }
+      products = data.products;
+      el("model").replaceChildren(...products.map(p => {
+        const option = document.createElement("option"); option.value = p.model; option.textContent = `${p.category} · ${p.model}`; return option;
+      }));
+      el("model").disabled = el("file").disabled = el("reset").disabled = false;
+      selectModel();
+    }).catch(error => { el("message").textContent = `데모 로드 실패: ${error.message}`; });
+  </script>
+</body>
+</html>

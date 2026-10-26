@@ -1,0 +1,24 @@
+{
+  "mode": "local-photo-reference",
+  "bundled_third_party_photos": false,
+  "products": [
+    {
+      "model": "AF90H19D35WN",
+      "name": "Bespoke AI 무풍콤보 갤러리 프로 청정 62.6㎡",
+      "category": "에어컨",
+      "issue": "시원한 바람이 나오지 않아요",
+      "photo_source_url": "https://www.samsung.com/sec/business/air-conditioners/floor-standing-af90h19d35wn-d2c/AF90H19D35WN/",
+      "support_url": "https://www.samsung.com/sec/support/model/AF90H19D35WN/",
+      "review_status": "reference-only"
+    },
+    {
+      "model": "LS32HG802SKXKR",
+      "name": "Odyssey OLED G8 G80SH 4K 240Hz",
+      "category": "모니터",
+      "issue": "화면에 신호가 없어요",
+      "photo_source_url": "https://www.samsung.com/sec/monitors/gaming-ls32hg802skxkr-d2c/LS32HG802SKXKR/",
+      "support_url": "https://www.samsung.com/sec/support/model/LS32HG802SKXKR/",
+      "review_status": "reference-only"
+    }
+  ]
+}

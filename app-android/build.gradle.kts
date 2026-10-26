@@ -10,8 +10,8 @@ android {
         applicationId = "kr.demo.visualguide"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1-demo"
+        versionCode = 2
+        versionName = "0.2-demo"
         val apiBaseUrl = providers.gradleProperty("VISUAL_GUIDE_API_BASE_URL").orElse("").get()
         val quotedUrl = apiBaseUrl.replace("\\", "\\\\").replace("\"", "\\\"")
             .replace("\n", "\\n").replace("\r", "\\r")

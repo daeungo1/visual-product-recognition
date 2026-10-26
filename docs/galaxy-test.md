@@ -1,7 +1,7 @@
 ---
 title: Galaxy에서 Visual Guide 시험하기
 description: 실제 Azure 연결과 오프라인 DEMO의 설치, 페어링, 추적 및 단계 확인 절차
-ms.date: 2026-10-26
+ms.date: 2026-10-27
 ms.topic: how-to
 ---
 
@@ -21,11 +21,12 @@ ms.topic: how-to
 * 음성 안내를 시험할 경우 한국어 TTS 음성 데이터
 * 클라우드 시험 시 인터넷과 운영자가 발급한 일회용 단말 코드
 
-[공개 Release의 디버그 APK](https://github.com/daeungo1/visual-product-recognition/releases/latest/download/app-android-debug.apk)를 설치한다.
-[체크섬](https://github.com/daeungo1/visual-product-recognition/releases/latest/download/app-android-debug.apk.sha256)으로
+[0.2 사전 시험 디버그 APK](https://github.com/daeungo1/visual-product-recognition/releases/download/v0.2.0-photo-demo/app-android-debug.apk)를 설치한다.
+[체크섬](https://github.com/daeungo1/visual-product-recognition/releases/download/v0.2.0-photo-demo/app-android-debug.apk.sha256)으로
 다운로드 무결성을 확인할 수 있다. 로컬 빌드 결과는 Git에 포함하지 않는다.
-패키지는 `kr.demo.visualguide`, 버전은 `0.1-demo`, 대상 SDK는 35다.
+패키지는 `kr.demo.visualguide`, 버전은 `0.2-demo`, 대상 SDK는 35다.
 개발용 서명이며 스토어 배포용이 아니다.
+main 미병합 개발 브랜치 빌드이며 기존 `latest`의 0.1과 구분한다.
 Knox나 회사 설치 정책이 차단하면 관리자에게 승인받고 정책을 우회하지 않는다.
 
 다운로드한 파일을 프로젝트 루트에 둔 경우, USB 디버깅이 허용된 기기는
@@ -42,6 +43,15 @@ Knox나 회사 설치 정책이 차단하면 관리자에게 승인받고 정책
 운영자 코드는 8~256자이며 공개 문서나 APK에 포함하지 않는다.
 
 ## PC 타깃 준비
+
+실모델 사진 참조 시험은 별도 모드다.
+`에어컨·모니터 실모델 사진 참조 DEMO`에서 AF90H19D35WN 또는 LS32HG802SKXKR을 선택한다.
+공식 사진 원본 페이지를 확인한 뒤 사용권 있는 로컬 JPEG/PNG를 불러온다.
+사용권·정확한 모델을 직접 확인해야 안내 카드가 열린다.
+모델 미확인, 사진·모델 변경과 초기화가 사진·확인·수동 보고를 지우는지 시험한다.
+손상 파일·10 MiB 초과·20 MP 초과는 오류를 표시하고 진행하지 않아야 한다.
+이는 카메라·자동 모델 인식·실제 고장 해결 시험이 아니다.
+공식 사진은 재배포 허가가 확인되지 않아 APK에 내장하지 않았다.
 
 [4종 제품 이슈 웹 목업](https://daeungo1.github.io/visual-product-recognition/)을 PC에서 연다.
 Galaxy에서 `카메라로 제품 이슈 DEMO`를 선택하고 PC에 표시할 제품을 고른다.

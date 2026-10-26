@@ -1,29 +1,33 @@
 ---
 title: Visual Product Recognition
 description: Galaxy용 합성 목업 설치, 시각 가이드 아키텍처, Azure 연결 및 고객 요구사항 검증 상태
-ms.date: 2026-10-26
+ms.date: 2026-10-27
 ---
 
 ## Mock-up 테스트 앱 설치 및 바로 접속
 
 | 용도 | 설치 및 접속 링크 |
 |------|------------------|
-| Galaxy 설치용 APK | [최종 테스트 APK 다운로드](https://github.com/daeungo1/visual-product-recognition/releases/latest/download/app-android-debug.apk) |
-| 배포 정보 및 무결성 | [Mock-up Release](https://github.com/daeungo1/visual-product-recognition/releases/latest), [APK SHA-256](https://github.com/daeungo1/visual-product-recognition/releases/latest/download/app-android-debug.apk.sha256) |
+| Galaxy 0.2 사전 시험 APK | [에어컨·모니터 사진 참조 APK](https://github.com/daeungo1/visual-product-recognition/releases/download/v0.2.0-photo-demo/app-android-debug.apk) |
+| 0.2 배포 정보 및 무결성 | [사진 참조 사전 릴리스](https://github.com/daeungo1/visual-product-recognition/releases/tag/v0.2.0-photo-demo), [APK SHA-256](https://github.com/daeungo1/visual-product-recognition/releases/download/v0.2.0-photo-demo/app-android-debug.apk.sha256) |
+| 기존 0.1 공개본 | [합성 Mock-up Release](https://github.com/daeungo1/visual-product-recognition/releases/tag/v0.1.0-mockup) |
 | PC 제품별 시나리오·타깃 | [에어컨·세탁기·냉장고·모니터 Overlay 목업](https://daeungo1.github.io/visual-product-recognition/) |
+| 실모델 2종 사진 참조 웹 | [로컬 실행용 HTML](./assets/photo-demo.html), main 병합·Pages 배포 후 공개 예정 |
 | 설치·페어링·시험 순서 | [Galaxy 테스트 안내](./docs/galaxy-test.md) |
 | HTTPS API | [liveness](https://ca-svg-dev-4ca0.whiterock-2d71d661.japaneast.azurecontainerapps.io/healthz), [readiness](https://ca-svg-dev-4ca0.whiterock-2d71d661.japaneast.azurecontainerapps.io/readyz) |
 | 공개 소스 | [daeungo1/visual-product-recognition](https://github.com/daeungo1/visual-product-recognition) |
 
 > [!WARNING]
-> 합성 제품 패널용 개발 서명 APK이며 실제 삼성 제품 지원 앱이 아니다.
+> 합성 추적·로컬 사진 참조용 개발 서명 APK이며 실제 삼성 제품 지원 앱이 아니다.
 > APK 컴파일과 자동 테스트는 Galaxy 설치·카메라·AR 정합 검증을 의미하지 않는다.
 > 웹 주소는 PC에 띄울 타깃이며 Android 앱의 웹 버전이 아니다.
 > API 주소는 브라우저용 앱 화면이 아니며, 클라우드 이용에는 별도 단말 페어링이 필요하다.
 
-2026-10-26 공개 APK를 다시 내려받아 SHA-256 일치를 확인했고,
-공개 웹 목업의 4종 진행·추적 상실·미등록 차단 37개 브라우저 검사를 통과했다.
-자동 테스트 및 APK 무결성은 [검증 기록](./docs/verification.md)에 정리했다.
+0.2는 개발 브랜치의 사전 시험본이며 main 자동 병합과 새 Pages 배포는 수행하지 않는다.
+2026-10-27 API·평가101개, core8개, Android25개와 사진 참조 웹 DOM 검사34개를 확인했다.
+사진 가져오기 시험에는 소유한 합성 PNG 및 생성 이미지를 사용했고 실제품 인식으로 계산하지 않았다.
+Galaxy 설치·실제품·터치 시험은 미실시다.
+0.1 공개 웹의 37개 검사는 이전 결과이며 [검증 기록](./docs/verification.md)에 분리했다.
 
 1. PC에서 [제품 이슈 Overlay 목업](https://daeungo1.github.io/visual-product-recognition/)을 열고
    에어컨·세탁기·냉장고·모니터 중 한 합성 제품을 선택한다.
@@ -39,6 +43,40 @@ ms.date: 2026-10-26
    운영자 발급 일회용 코드로 페어링한다. 공개 README에는 코드를 제공하지 않는다.
 
 ## 현재 구현
+
+### 인터넷 사진 조사에 기반한 실모델 2종
+
+| 종류 | 확인한 모델 | 공식 사진 원본 및 제품 지원 |
+|------|-------------|-----------------------------|
+| 에어컨 | AF90H19D35WN, Bespoke AI 무풍콤보 갤러리 프로 청정 | [공식 제품·사진](https://www.samsung.com/sec/business/air-conditioners/floor-standing-af90h19d35wn-d2c/AF90H19D35WN/), [모델 지원](https://www.samsung.com/sec/support/model/AF90H19D35WN/) |
+| 모니터 | LS32HG802SKXKR, Odyssey OLED G8 G80SH | [공식 제품·사진](https://www.samsung.com/sec/monitors/gaming-ls32hg802skxkr-d2c/LS32HG802SKXKR/), [모델 지원](https://www.samsung.com/sec/support/model/LS32HG802SKXKR/) |
+
+2026 제품군의 두 모델을 공식 페이지와 대조했다. 검색 요약의 잘못된 연식과
+번들·세부 모델 혼동을 그대로 채택하지 않았다.
+공식 사진의 APK·공개 저장소 재배포 권한은 확인되지 않아 사진 파일은 내장하지 않았다.
+[로컬 사진 참조 웹 DEMO](./assets/photo-demo.html) 또는
+APK `에어컨·모니터 실모델 사진 참조 DEMO`에서 아래 순서로 시험한다.
+
+1. 모델을 선택하고 공식 사진 원본 페이지에서 해당 모델을 확인한다.
+2. 사용권 있는 JPEG/PNG를 로컬에서 불러온다(10 MiB·20 MP 이하).
+3. 사진 사용권과 정확한 모델 일치를 사용자가 직접 확인한다.
+4. 증상 안내 카드를 보고 선택 모델의 공식 지원을 연다.
+5. 미해결·판정 불가·사용자 해결 보고를 수동으로 기록한다. 자동 성공은 없다.
+
+이 흐름은 사진 미리보기이며 카메라·모델 자동 식별·AR 추적이 아니다.
+사진 또는 모델 변경·모델 미확인·이미지 오류 시 확인과 결과를 지운다.
+사진은 메모리에서만 사용하며 서버 전송·영구 보관하지 않는다.
+미검수 버튼 좌표·공식 조작 절차를 새로 게시하지 않고 공식 출처로 연결한다.
+
+웹 소스는 저장소 루트에서 아래처럼 제공한 뒤
+`http://127.0.0.1:8879/photo-demo.html`을 연다. 파일을 직접 열면 카탈로그 fetch가 차단될 수 있다.
+Python 환경은 아래 빌드·검증 절차로 먼저 준비한다.
+
+```powershell
+.\server\.venv\Scripts\python.exe -m http.server 8879 --bind 127.0.0.1 --directory .\assets
+```
+
+### 기존 카메라 추적 합성 DEMO
 
 목표 고객 시나리오는 “삼성 제품을 비춤 → 모델 확인 → 증상 선택 →
 제품 위에 해결 절차 Overlay → 결과 확인 또는 공식 지원 연결”이다.
@@ -114,10 +152,10 @@ https://ca-svg-dev-4ca0.whiterock-2d71d661.japaneast.azurecontainerapps.io
 | 위치 | 책임 |
 |------|------|
 | [core](./core/) | 프레임워크 없는 Kotlin 도메인, 상태 머신, 좌표 및 포트 |
-| [app-android](./app-android/) | Compose, ARCore, 한국어 ML Kit OCR, TTS, 암호화 단말 등록과 HTTPS 어댑터 |
+| [app-android](./app-android/) | Compose, 로컬 사진 참조, ARCore, 한국어 ML Kit OCR, TTS, 암호화 단말 등록과 HTTPS 어댑터 |
 | [server](./server/) | FastAPI, 실제 Azure 어댑터, 인증, 후보 검색, 단계 판정과 조건부 세션 쓰기 |
 | [pipeline](./pipeline/) | 자체 자산 생성, 검수 자산 등록, 검색 활성화와 비공개 페어링 발급 |
-| [assets](./assets/) | 4종 공유 시나리오 카탈로그, 합성 타깃·패널 지도·대화형 HTML |
+| [assets](./assets/) | 실모델 사진 출처, 4종 공유 시나리오 카탈로그, 합성 타깃·패널 지도·대화형 HTML |
 | [infra](./infra/) | 기본 서비스, 추가 사설 네트워크 및 앱 단독 배포 Bicep |
 | [eval](./eval/) | 라벨 기반 식별, 정합, 완주 지표와 부족한 데이터 처리 |
 
@@ -135,6 +173,10 @@ OCR은 표시 상태를 확인할 뿐 물리 버튼을 눌렀거나 부품을 �
 ```mermaid
 flowchart LR
     User["Galaxy 사용자"] --> UI["Compose UI: 모드·후보 확인"]
+    UI --> Photo["로컬 사진 참조 어댑터: 메모리 전용"]
+    Browser["사진 참조 웹: 로컬 실행"] --> Sources["2종 모델 출처 카탈로그"]
+    Photo --> Sources
+    Photo --> Manual["사용권·모델 직접 확인 → 공식 지원 → 수동 보고"]
     UI --> Offline["오프라인 DEMO 어댑터"]
     Offline --> Core["순수 Kotlin core: 상태 머신·좌표·포트"]
     UI --> Client["CloudCoordinator / HTTPS 어댑터"]
@@ -154,6 +196,10 @@ flowchart LR
 ```
 
 * `core`는 Android, ARCore, ML Kit, HTTP 및 Azure SDK를 참조하지 않는다.
+* 사진 참조는 [PhotoDemoScreen](./app-android/src/main/java/kr/demo/visualguide/PhotoDemoScreen.kt)과
+  [사진 출처 카탈로그](./assets/products/catalog.json)를 사용하는 별도 외곽 어댑터다.
+  브라우저도 같은 카탈로그를 읽는다. 사진은 로컬 메모리에서만 사용하고
+  카메라·core 상태 머신·API·클라우드의 성공 증거로 보내지 않는다.
 * 제품 이슈 DEMO는 [공유 카탈로그](./assets/scenarios/catalog.json)를
   Android와 웹이 함께 읽는다. 4종 기준 이미지를 ARCore에 등록해 탐지하고
   하나의 타깃이 현재 추적될 때만 제품 확인 후보를 표시한다.
@@ -162,7 +208,7 @@ flowchart LR
   클라우드 모드는 HTTPS 어댑터에서 서버가 승인한 단계만 표시한다.
 * Cosmos와 Blob은 Private Endpoint를 사용한다. Galaxy의 API ingress는 공용 HTTPS다.
   Search와 OpenAI까지 사설 연결이라고 표시하지 않는다.
-* GitHub Pages는 명시적으로 선택한 합성 HTML·PNG·카탈로그만 제공한다.
+* GitHub Pages는 명시적으로 선택한 데모 HTML·합성 PNG·카탈로그만 제공한다.
   카메라 업로드·인증·API를 호스팅하지 않는다.
 * [실제 Azure 토폴로지](./docs/azure-architecture.md)와
   [API 계약](./docs/cloud-api-contract.md)에 네트워크·권한·요청 형식이 있다.

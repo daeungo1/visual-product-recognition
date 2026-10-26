@@ -28,7 +28,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: actions/configure-pages@v5
-      - name: Stage only the synthetic target
+      - name: Stage demo pages and synthetic targets
         shell: python
         run: |
           from pathlib import Path
@@ -36,8 +36,12 @@ jobs:
           output = Path("_site")
           output.mkdir()
           shutil.copyfile(Path("assets").joinpath("product-demo.html"), output.joinpath("index.html"))
+          shutil.copyfile(Path("assets").joinpath("product-demo.html"), output.joinpath("product-demo.html"))
           shutil.copyfile(Path("assets").joinpath("demo-target.html"), output.joinpath("demo-target.html"))
           shutil.copyfile(Path("assets").joinpath("demo-target.png"), output.joinpath("demo-target.png"))
+          shutil.copyfile(Path("assets").joinpath("photo-demo.html"), output.joinpath("photo-demo.html"))
+          output.joinpath("products").mkdir()
+          shutil.copyfile(Path("assets").joinpath("products", "catalog.json"), output.joinpath("products", "catalog.json"))
           output.joinpath("scenarios").mkdir()
           for name in ("catalog.json", "aircon.png", "washer.png", "refrigerator.png", "monitor.png"):
               shutil.copyfile(Path("assets").joinpath("scenarios", name), output.joinpath("scenarios", name))

@@ -64,19 +64,25 @@ class MainActivity : ComponentActivity() {
 private fun DemoApp(activity: ComponentActivity) {
     var mode by remember { mutableStateOf<String?>(null) }
     if (mode == null) {
-        Column(Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Column(Modifier.fillMaxSize().padding(20.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text("시각 가이드 · 모드 선택", style = MaterialTheme.typography.headlineMedium)
             Text("오프라인 DEMO와 HTTPS 연결 모드는 별개입니다. 연결 실패 시 자동으로 DEMO를 실행하지 않습니다.")
             Text("에어컨·세탁기·냉장고·모니터를 비추고 증상별 Overlay를 확인하는 합성 실습입니다.")
             Button(onClick = { mode = "troubleshooting" }) { Text("카메라로 제품 이슈 DEMO") }
+            OutlinedButton(onClick = { mode = "photo" }) { Text("에어컨·모니터 실모델 사진 참조 DEMO") }
             OutlinedButton(onClick = { mode = "cloud" }) { Text("실제 HTTPS 클라우드 연결") }
             OutlinedButton(onClick = { mode = "offline" }) { Text("기존 리모컨 · 오프라인 DEMO") }
         }
-        if (mode == "troubleshooting") {
-            BackHandler { mode = null }
-            TroubleshootingDemoScreen(activity) { mode = null }
-            return
-        }
+        return
+    }
+    if (mode == "troubleshooting") {
+        BackHandler { mode = null }
+        TroubleshootingDemoScreen(activity) { mode = null }
+        return
+    }
+    if (mode == "photo") {
+        BackHandler { mode = null }
+        PhotoDemoScreen(activity) { mode = null }
         return
     }
     if (mode == "cloud") {

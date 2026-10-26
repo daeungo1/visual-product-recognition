@@ -1,9 +1,60 @@
 ---
 title: Visual Guide 구현 및 검증 기록
-description: 4종 제품 이슈 목업, 최종 APK, 자동 테스트 및 과거 Azure 실호출과 미실시 현장 시험
-ms.date: 2026-10-26
+description: 실모델 2종 사진 참조, 4종 합성 목업, APK 자동 검증 및 미실시 현장 시험
+ms.date: 2026-10-27
 ms.topic: reference
 ---
+
+## 2026-10-27 실모델 2종 사진 참조 사전 시험
+
+공식 제품·지원 페이지가 일치하는 에어컨 AF90H19D35WN과 모니터 LS32HG802SKXKR을
+[공유 출처 카탈로그](../assets/products/catalog.json)에 등록했다.
+공식 사진 재배포 허가는 확인하지 못해 사진을 APK·저장소에 내장하지 않았다.
+사용권 있는 로컬 사진, 사용자 모델 확인, 증상 참조 카드, 공식 지원과 수동 결과만 제공한다.
+실제품 자동 식별·실제 버튼 좌표·검수된 조작 절차·고장 해결 자동 판정은 구현한 것으로 보지 않는다.
+기존 core 계약·상태 전이와 Azure 인프라는 변경하지 않았다.
+
+| 항목 | 확인 결과 |
+|------|-----------|
+| Python API·평가 | 101개 통과, 외부 Starlette/AnyIO 폐기 예정 경고 1개 |
+| Ruff | API·테스트·pipeline·평가 통과 |
+| Kotlin core / Android | 8개 / 25개, 실패·오류·건너뜀 0 |
+| 최종 Android 검증 | core·Android 테스트, APK 및 lint 명령 성공, 2분23초 |
+| Android lint XML | 오류 0, 경고 9: 의존성 권고4·아이콘1·KTX 권장4 |
+| 최종 APK | `0.2-demo`, versionCode 2, `kr.demo.visualguide`, SDK 26/35 |
+| APK 크기·서명 | 56,050,465 bytes, apksigner v2 검증 통과, signer 1개 |
+| APK 자산 | 사진 참조 HTML·제품 출처 JSON이 최종 소스 바이트와 일치 |
+| 사진 참조 브라우저 | 로컬 실제 브라우저 DOM 활성화·change 이벤트 검사34개 통과 |
+| 연결 기기 | 격리 ADB 포트5041에서 기기 없음, 해당 ADB 서버 종료 |
+| 미실시 | 에뮬레이터 실행, Galaxy 설치·사진 선택기·터치·카메라·AR·OCR·TTS, 실제품 사진·실물 인식 |
+
+```text
+SHA-256: cb8889cd66ee6ee16f986d0c240cf694e2b0d89f646ef09ba4df395b533c3a41
+```
+
+브라우저31개 검사는 두 모델별 출처·확인 게이트·수동 결과·모델 미확인 차단,
+사진 및 모델 변경·초기화, 손상·잘못된 형식·10 MiB 초과·20 MP 초과,
+이전 비동기 로드 무효화, 390px/1100px 넘침 없음과 POST 없음이다.
+추가3개는 JPEG, 정확히10 MiB인 PNG, 정확히20 MP인 PNG 허용을 확인했다.
+소유한 합성 PNG와 생성 이미지로 가져오기 경로만 시험했다.
+실제 모델 사진 두 장을 인식한 시험이나 제품 식별 정확도 측정이 아니다.
+
+브라우저 포인터 actionability 대기가 끝나지 않아 물리 포인터·터치 검증으로 기록하지 않는다.
+DOM 활성화와 입력 이벤트로 실제 페이지 상태를 검사했으며 내부 성공 상태를 직접 설정하지 않았다.
+이 브라우저 환경에서 분리된 이미지의 decode 대기가 끝나지 않는 경로를 재현한 뒤,
+화면 이미지의 load/error 이벤트와15초 오류 타임아웃으로 변경해 같은 파일 입력을 확인했다.
+Android에는 합성 제품 모드 분기가 초기 메뉴 내부에 있어 진입하지 못하는 오류도 수정했다.
+이 분기의 실제 Android 화면 전환은 기기 시험이 필요하다.
+
+새 카탈로그가 없을 때 Python 테스트가 실패하는 것을 먼저 확인했다.
+최종 전체 Python·Ruff와 Android 검증을 다시 실행했고, Gradle의 변경 없는 테스트는
+직전 성공 결과의 up-to-date 상태였다. 새 HTML로 재패키징한 APK의 자산도 직접 비교했다.
+아래2026-10-26 명령과 동일한 검증 대상을 사용했으며 최종 Gradle은 복원된 의존성에
+`--offline`을 추가했다.
+
+0.2는 개발 브랜치의 [사전 릴리스](https://github.com/daeungo1/visual-product-recognition/releases/tag/v0.2.0-photo-demo)로 제공한다.
+main을 자동 병합하거나 새 Pages를 배포하지 않는다. 기존 `latest`는0.1이며,
+새 사진 참조 웹은 로컬 실행용이다. 아래0.1 공개 다운로드·37개 웹 검사는 과거 기록이다.
 
 ## 2026-10-26 제품 이슈 목업 및 계약 재검증
 
@@ -55,10 +106,10 @@ uv run --no-sync pytest tests ..\eval\tests
 uv run --no-sync ruff check src tests ..\pipeline ..\eval
 ```
 
-### 최신 공개 APK 무결성
+### 당시 0.1 공개 APK 무결성
 
-[설치용 APK](https://github.com/daeungo1/visual-product-recognition/releases/latest/download/app-android-debug.apk)와
-[체크섬](https://github.com/daeungo1/visual-product-recognition/releases/latest/download/app-android-debug.apk.sha256)을 제공한다.
+[당시 설치용 APK](https://github.com/daeungo1/visual-product-recognition/releases/download/v0.1.0-mockup/app-android-debug.apk)와
+[체크섬](https://github.com/daeungo1/visual-product-recognition/releases/download/v0.1.0-mockup/app-android-debug.apk.sha256)을 제공한다.
 
 | 항목 | 값 |
 |------|----|
