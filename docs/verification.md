@@ -23,7 +23,7 @@ ms.topic: reference
 | Android lint | 최종 XML 오류 0, 경고 8(업데이트 권고 4, 아이콘 1, KTX 권장 3) |
 | APK 자산 | 공유 catalog.json과 4개 PNG가 현재 원본 바이트와 모두 일치 |
 | APK 서명 | apksigner v2 검증 통과, signer 1개 |
-| 웹 목업 | 로컬 실제 브라우저에서 4종 전환·표시 상태·3단계 완료·추적 상실·미등록 차단 37개 검사 통과 |
+| 웹 목업 | 로컬 및 공개 Pages 각각 실제 브라우저37개 검사 통과, 390px/1100px 가로 넘침 없음 |
 | ARCore 참조 품질 | 에어컨100·세탁기90·냉장고100·모니터100, 모두 권장 최소75점 이상 |
 | 현재 Azure 재확인 | 익명 `/healthz` 200, `/readyz` 200, `/v1/catalog` 401 |
 | 기기 확인 | 격리 ADB 포트5041에서 연결 기기 없음, 작업용 서버 종료 |
@@ -71,6 +71,28 @@ uv run --no-sync ruff check src tests ..\pipeline ..\eval
 ```text
 SHA-256: 4edb333d1e028bee7ee779a80be1115f781c24f56d19b08a7d7b4ab8f5048c31
 ```
+
+공개 `releases/latest/download` 주소에서 인증 없이 APK 전체를 다시 내려받아
+61,871,040 bytes와 위 SHA-256이 원본 및 공개 체크섬과 일치함을 확인했다.
+공개 Pages의 첫 화면·기존 리모컨 HTML·공유 카탈로그와5개 PNG도 HTTP200이다.
+공개 카탈로그는 원본과 같은 데이터이며5개 PNG는 원본 바이트와 일치한다.
+[Pages 배포 실행](https://github.com/daeungo1/visual-product-recognition/actions/runs/40326073540)이 성공했다.
+공개 소스125개 파일의 credential-pattern 검사에서 발견0건이며,
+로컬 키·페어링 원문·캐시·빌드 폴더는 게시하지 않았다. 이는 종합 보안 감사가 아니다.
+
+### 독립 GitHub 검증
+
+[Windows CI 실행](https://github.com/daeungo1/visual-product-recognition/actions/runs/40395521942)이
+6분에 성공했다. 새 runner에서 고정 의존성 복원, API·평가·Ruff,
+core·Android 테스트, lint, APK 빌드 및 결과 artifact 업로드를 확인했다.
+CI APK는 별도 개발 서명이므로 공개 Release APK의 체크섬과 같다고 가정하지 않는다.
+
+첫 CI는 `setup-android` 기본값의 폐기된 `tools` 패키지를 찾지 못해 실패했다.
+실패 로그와 action 입력 정의를 확인하고 `packages: platform-tools`로 한정했다.
+프로젝트가 선언한 SDK35·Build Tools35 설치는 별도 단계로 유지했다.
+재실행에서 해당 단계와 전체 검증이 통과했다.
+일부 action의 Node20 및 setup-java v4 지원 종료 권고는 남아 있으며,
+현재 runner의 Node24 실행에서 성공한 결과와 구분한다.
 
 아래48개 Azure 실호출과 리모컨 검증은2026-10-23의 별도 과거 기록이다.
 최신 health 확인을 전체 클라우드 종단 간 재실행으로 표시하지 않는다.
