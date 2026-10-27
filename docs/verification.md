@@ -5,6 +5,40 @@ ms.date: 2026-10-27
 ms.topic: reference
 ---
 
+## 2026-10-27 설치 없는 Azure 모바일 웹
+
+[공개 HTTPS 모바일 웹](https://agreeable-coast-0b8033d00.5.azurestaticapps.net/)과
+[4종 합성 시나리오](https://agreeable-coast-0b8033d00.5.azurestaticapps.net/product-demo.html)를
+Static Web Apps Free에 게시했다. 기존 API·Cosmos·Blob·네트워크는 변경하지 않았다.
+
+| 항목 | 확인 결과 |
+|------|-----------|
+| 인프라 | Bicep 컴파일·ARM validation 성공, what-if는 Free 정적 앱 1개 생성 및 기존 리소스 Ignore |
+| 실제 리소스 | `swa-vpr-web-dev-a277`, `rg-svg-dev-4ca0`, East Asia, Free, Incremental 배포 성공 |
+| 실제 콘텐츠 | 공식 StaticSitesClient의 stable SHA-256 검증 후 12개 allowlist 파일 게시 성공, API 생성 없음 |
+| 공개 HTTPS | 공개 파일 11개와 루트 응답이 패키지 원본 바이트와 일치, 호스트 설정 파일은 비공개 |
+| 부정 경로 | API·미존재·서버 비밀 경로·Git 설정·호스트 설정 요청 5개 모두 404 |
+| 응답 헤더 | CSP·nosniff·DENY·no-referrer·Permissions-Policy·no-cache 6개 확인 |
+| 사진 참조 DOM | 공개 사이트에서 두 모델의 촬영/파일 입력·동의 게이트·수동 결과·미확인·초기화·pagehide·화면 크기·업로드 없음 28개 |
+| 사진 입력 경계 DOM | 형식·10 MiB 초과·손상·20 MP 초과 거부, JPEG·정확히10 MiB·정확히20 MP 허용, 오래된 콜백 거부 8개 |
+| 합성 시나리오 DOM | 4종 단계·잘못된 상태 차단·추적 상실/복원·초기화·미등록 차단·화면 크기 39개 |
+| Python·Ruff | API·평가·게시 테스트107개 통과, Ruff 전체 통과, 기존 외부 의존성 경고1개 |
+| core·Android | 테스트8개·25개, 실패·오류·건너뜀0; 변경 없는 테스트는 up-to-date 결과 재사용 |
+| APK·lint | 로컬 APK 재패키징 및 lint 성공, 4분2초, 오류0·기존 권고 경고9개 |
+| 미실시 | 에뮬레이터 실행·물리 Galaxy 설치/터치/촬영/선택기·실제품 사진 인식/실물 정합 |
+
+브라우저 합계75개는 DOM 활성화와 입력 이벤트 검사이며 물리 터치 검증이 아니다.
+사진 fixture는 소유한 합성 패널과 브라우저에서 생성한 이미지다.
+카메라 속성 검사는 실제 단말 카메라가 열렸다는 증거가 아니다.
+네트워크 검사는 로컬 `blob:` 읽기를 제외한 HTTP(S)를 대상으로 했고
+사진 입력·결과 흐름에서 외부 전송이나 POST는 없었다.
+첫 검사 코드가 `blob:`을 외부 전송으로 분류하던 오류를 고쳐 이 구분으로 다시 검사했다.
+
+이번 변경은 브라우저 입력·정적 배포 어댑터에 한정하며 Kotlin core 계약을 변경하지 않았다.
+공식 사진 재배포·자동 모델 인식·실버튼 좌표·실제 고장 해결 성공을 새로 주장하지 않는다.
+공개 0.2 APK와 체크섬은 아래 사전 릴리스 기록 그대로 유지한다.
+현재 소스의 새 APK 빌드는 별도 빌드 결과이며 고정 릴리스 파일과 동일하다고 주장하지 않는다.
+
 ## 2026-10-27 실모델 2종 사진 참조 사전 시험
 
 공식 제품·지원 페이지가 일치하는 에어컨 AF90H19D35WN과 모니터 LS32HG802SKXKR을
@@ -52,9 +86,10 @@ Android에는 합성 제품 모드 분기가 초기 메뉴 내부에 있어 진�
 아래2026-10-26 명령과 동일한 검증 대상을 사용했으며 최종 Gradle은 복원된 의존성에
 `--offline`을 추가했다.
 
-0.2는 개발 브랜치의 [사전 릴리스](https://github.com/daeungo1/visual-product-recognition/releases/tag/v0.2.0-photo-demo)로 제공한다.
-main을 자동 병합하거나 새 Pages를 배포하지 않는다. 기존 `latest`는0.1이며,
-새 사진 참조 웹은 로컬 실행용이다. 아래0.1 공개 다운로드·37개 웹 검사는 과거 기록이다.
+당시 0.2는 개발 브랜치의 [사전 릴리스](https://github.com/daeungo1/visual-product-recognition/releases/tag/v0.2.0-photo-demo)로 제공했고
+main 병합·Pages 갱신 없이 사진 참조 웹을 로컬에서만 시험했다.
+이후 위 Azure 모바일 웹 배포를 추가했다. 기존 `latest`는0.1이며,
+아래0.1 공개 다운로드·37개 웹 검사는 과거 기록이다.
 
 ## 2026-10-26 제품 이슈 목업 및 계약 재검증
 

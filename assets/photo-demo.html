@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>에어컨·모니터 실모델 사진 참조 DEMO</title>
+  <title>설치 없는 모바일 사진 참조 DEMO</title>
   <style>
     * { box-sizing: border-box; }
     body { margin: auto; max-width: 1040px; padding: 20px; font-family: system-ui, sans-serif; color: #142333; background: #eaf0f5; }
@@ -11,7 +11,7 @@
     main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; }
     section { min-width: 0; background: white; border-radius: 12px; padding: 16px; }
     button, select, input { font: inherit; margin: 8px 0; max-width: 100%; }
-    button, select { padding: 10px; }
+    button, select, input[type="file"] { padding: 10px; min-height: 44px; }
     label { display: block; margin: 12px 0; }
     a { color: #005baf; overflow-wrap: anywhere; }
     #preview { position: relative; }
@@ -23,13 +23,14 @@
   </style>
 </head>
 <body>
-  <h1>에어컨·모니터 실모델 사진 참조 DEMO</h1>
+  <h1>에어컨·모니터 모바일 사진 참조 DEMO</h1>
   <p class="notice">2026 제품군의 모델별 공식 출처를 연결하는 사진 기반 수동 확인 목업입니다.
-    카메라·자동 모델 인식·AR 정합·OCR·고장 진단은 수행하지 않습니다.
+    폰 카메라로 한 장을 촬영하거나 로컬 사진을 선택할 수 있습니다.
+    자동 모델 인식·AR 추적·OCR·고장 진단은 수행하지 않습니다.
     공식 사진의 공개 APK/웹 재배포 허가는 확인되지 않아 사진을 내장하지 않았습니다.
     원본 사이트에서 사진을 확인하고 사용권 있는 파일만 불러오세요. 사진은 서버에 전송하거나 저장하지 않습니다.</p>
   <p><a href="product-demo.html">4종 합성 카메라 타깃</a> ·
-    <a href="https://github.com/daeungo1/visual-product-recognition/releases/latest">Galaxy APK·설치 안내</a></p>
+    <a href="https://github.com/daeungo1/visual-product-recognition/releases/tag/v0.2.0-photo-demo">Galaxy APK·설치 안내</a></p>
   <label for="model">참조 모델</label>
   <select id="model" disabled><option>출처 카탈로그 읽는 중</option></select>
   <p id="message" role="alert"></p>
@@ -37,6 +38,10 @@
     <section aria-label="로컬 사진">
       <h2 id="title">모델 준비 중</h2>
       <p><a id="source" target="_blank" rel="noopener noreferrer">공식 사진 원본 페이지 열기</a></p>
+      <label for="camera">폰 카메라로 사진 한 장 촬영 (자동 인식 아님)</label>
+      <input id="camera" type="file" accept="image/jpeg,image/png" capture="environment" disabled>
+      <p>카메라 선택은 브라우저·회사 단말 정책에 따라 파일 선택으로 열릴 수 있습니다.
+        카메라를 쓸 수 없으면 아래 로컬 사진 선택을 사용하세요. JPEG/PNG 10 MiB·20 MP 이하만 허용합니다.</p>
       <label for="file">사용권 있는 로컬 사진 (JPEG/PNG, 최대 10 MiB·20 MP)</label>
       <input id="file" type="file" accept="image/jpeg,image/png" disabled>
       <div id="preview">
@@ -87,7 +92,7 @@
       if (objectUrl) URL.revokeObjectURL(objectUrl);
       objectUrl = null; photoReady = false; started = false;
       el("photo").removeAttribute("src"); el("photo").hidden = true;
-      el("file").value = ""; el("rights").checked = el("identity").checked = false;
+      el("file").value = el("camera").value = ""; el("rights").checked = el("identity").checked = false;
       el("outcome").value = ""; el("result").textContent = "미판정"; el("message").textContent = "";
       render();
     }
@@ -100,8 +105,8 @@
       el("issue").textContent = active.issue;
     }
     el("model").onchange = selectModel;
-    el("file").onchange = () => {
-      const file = el("file").files[0];
+    el("file").onchange = el("camera").onchange = event => {
+      const file = event.target.files[0];
       clear();
       if (!file) return;
       if (!["image/jpeg", "image/png"].includes(file.type) || file.size > 10 * 1024 * 1024) {
@@ -129,6 +134,7 @@
     el("start").onclick = () => { if (!el("start").disabled) { started = true; render(); } };
     el("reject").onclick = () => { clear(); el("message").textContent = "모델 미확인: 안내 차단. 사진만으로 모델을 확정하지 않습니다."; };
     el("reset").onclick = clear;
+    window.addEventListener("pagehide", clear);
     el("outcome").onchange = () => {
       if (!started) return;
       const value = el("outcome").value;
@@ -153,7 +159,7 @@
       el("model").replaceChildren(...products.map(p => {
         const option = document.createElement("option"); option.value = p.model; option.textContent = `${p.category} · ${p.model}`; return option;
       }));
-      el("model").disabled = el("file").disabled = el("reset").disabled = false;
+      el("model").disabled = el("file").disabled = el("camera").disabled = el("reset").disabled = false;
       selectModel();
     }).catch(error => { el("message").textContent = `데모 로드 실패: ${error.message}`; });
   </script>

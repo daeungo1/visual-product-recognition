@@ -1,6 +1,6 @@
 ---
 title: Visual Product Recognition
-description: Galaxy용 합성 목업 설치, 시각 가이드 아키텍처, Azure 연결 및 고객 요구사항 검증 상태
+description: 설치 없는 모바일 웹, Galaxy 목업 설치, 시각 가이드 아키텍처 및 고객 요구사항 검증 상태
 ms.date: 2026-10-27
 ---
 
@@ -8,11 +8,13 @@ ms.date: 2026-10-27
 
 | 용도 | 설치 및 접속 링크 |
 |------|------------------|
+| 폰에서 설치 없이 바로 시험 | [Azure 모바일 사진·카메라 한 장 DEMO](https://agreeable-coast-0b8033d00.5.azurestaticapps.net/) |
+| 웹에서 4종 시나리오 시험 | [에어컨·세탁기·냉장고·모니터 합성 Overlay](https://agreeable-coast-0b8033d00.5.azurestaticapps.net/product-demo.html) |
 | Galaxy 0.2 사전 시험 APK | [에어컨·모니터 사진 참조 APK](https://github.com/daeungo1/visual-product-recognition/releases/download/v0.2.0-photo-demo/app-android-debug.apk) |
 | 0.2 배포 정보 및 무결성 | [사진 참조 사전 릴리스](https://github.com/daeungo1/visual-product-recognition/releases/tag/v0.2.0-photo-demo), [APK SHA-256](https://github.com/daeungo1/visual-product-recognition/releases/download/v0.2.0-photo-demo/app-android-debug.apk.sha256) |
 | 기존 0.1 공개본 | [합성 Mock-up Release](https://github.com/daeungo1/visual-product-recognition/releases/tag/v0.1.0-mockup) |
 | PC 제품별 시나리오·타깃 | [에어컨·세탁기·냉장고·모니터 Overlay 목업](https://daeungo1.github.io/visual-product-recognition/) |
-| 실모델 2종 사진 참조 웹 | [로컬 실행용 HTML](./assets/photo-demo.html), main 병합·Pages 배포 후 공개 예정 |
+| 웹 소스 | [모바일 사진 참조 HTML](./assets/photo-demo.html), [공유 모델 출처](./assets/products/catalog.json) |
 | 설치·페어링·시험 순서 | [Galaxy 테스트 안내](./docs/galaxy-test.md) |
 | HTTPS API | [liveness](https://ca-svg-dev-4ca0.whiterock-2d71d661.japaneast.azurecontainerapps.io/healthz), [readiness](https://ca-svg-dev-4ca0.whiterock-2d71d661.japaneast.azurecontainerapps.io/readyz) |
 | 공개 소스 | [daeungo1/visual-product-recognition](https://github.com/daeungo1/visual-product-recognition) |
@@ -20,14 +22,33 @@ ms.date: 2026-10-27
 > [!WARNING]
 > 합성 추적·로컬 사진 참조용 개발 서명 APK이며 실제 삼성 제품 지원 앱이 아니다.
 > APK 컴파일과 자동 테스트는 Galaxy 설치·카메라·AR 정합 검증을 의미하지 않는다.
-> 웹 주소는 PC에 띄울 타깃이며 Android 앱의 웹 버전이 아니다.
+> 설치가 차단된 폰은 위 Azure 웹을 사용한다. 단말 보안 정책을 우회하지 않는다.
+> 웹은 사진 참조·수동 결과·합성 단계 시험용이며 Android의 ARCore·OCR·TTS·인증 API 기능을 이식한 것은 아니다.
 > API 주소는 브라우저용 앱 화면이 아니며, 클라우드 이용에는 별도 단말 페어링이 필요하다.
 
-0.2는 개발 브랜치의 사전 시험본이며 main 자동 병합과 새 Pages 배포는 수행하지 않는다.
-2026-10-27 API·평가101개, core8개, Android25개와 사진 참조 웹 DOM 검사34개를 확인했다.
+0.2 APK는 고정된 사전 릴리스이며 이번 웹 배포로 파일·태그·체크섬을 덮어쓰지 않았다.
+2026-10-27 Azure Free 정적 웹에 콘텐츠를 배포하고 익명 HTTPS로 확인했다.
+API·평가·게시 검사107개, core8개, Android25개와 공개 웹 DOM 검사75개를 확인했다.
 사진 가져오기 시험에는 소유한 합성 PNG 및 생성 이미지를 사용했고 실제품 인식으로 계산하지 않았다.
 Galaxy 설치·실제품·터치 시험은 미실시다.
 0.1 공개 웹의 37개 검사는 이전 결과이며 [검증 기록](./docs/verification.md)에 분리했다.
+
+### 폰 브라우저에서 설치 없이 시험
+
+1. [모바일 웹](https://agreeable-coast-0b8033d00.5.azurestaticapps.net/)을
+   Chrome 또는 Samsung Internet에서 열고 에어컨·모니터 모델을 선택한다.
+2. `폰 카메라로 사진 한 장 촬영` 또는 로컬 사진 선택으로 사용권 있는 JPEG/PNG를 불러온다.
+   브라우저·회사 단말 정책에 따라 촬영 대신 파일 선택기가 열릴 수 있다.
+3. 사진 사용권과 선택 모델 일치를 직접 확인하고 `사진 참조 안내 시작`을 누른다.
+4. 모델별 증상 참조 카드와 공식 지원을 확인하고 미해결·판정 불가·사용자 해결 보고를 선택한다.
+5. 사진·모델 변경, 확인 해제, 모델 미확인, 초기화와 페이지 이탈 시 이전 확인·결과가 지워지는지 확인한다.
+
+[4종 합성 Overlay](https://agreeable-coast-0b8033d00.5.azurestaticapps.net/product-demo.html)는
+폰 한 대에서도 시험할 수 있다. 제품을 고른 뒤 노란 영역을 눌러 가상 표시를 바꾸고
+`표시 상태 확인`으로 진행한다. 추적 상실 버튼은 시뮬레이션일 뿐 실제 카메라 추적이 아니다.
+사진은 웹 서버로 전송하지 않는다. 촬영 원본의 갤러리 저장 여부는 단말·카메라 앱 정책에 따른다.
+
+### Galaxy APK 카메라 추적 시험
 
 1. PC에서 [제품 이슈 Overlay 목업](https://daeungo1.github.io/visual-product-recognition/)을 열고
    에어컨·세탁기·냉장고·모니터 중 한 합성 제품을 선택한다.
@@ -54,16 +75,16 @@ Galaxy 설치·실제품·터치 시험은 미실시다.
 2026 제품군의 두 모델을 공식 페이지와 대조했다. 검색 요약의 잘못된 연식과
 번들·세부 모델 혼동을 그대로 채택하지 않았다.
 공식 사진의 APK·공개 저장소 재배포 권한은 확인되지 않아 사진 파일은 내장하지 않았다.
-[로컬 사진 참조 웹 DEMO](./assets/photo-demo.html) 또는
+[공개 모바일 웹 DEMO](https://agreeable-coast-0b8033d00.5.azurestaticapps.net/) 또는
 APK `에어컨·모니터 실모델 사진 참조 DEMO`에서 아래 순서로 시험한다.
 
 1. 모델을 선택하고 공식 사진 원본 페이지에서 해당 모델을 확인한다.
-2. 사용권 있는 JPEG/PNG를 로컬에서 불러온다(10 MiB·20 MP 이하).
+2. 웹에서 한 장을 촬영하거나 사용권 있는 JPEG/PNG를 로컬에서 불러온다(10 MiB·20 MP 이하).
 3. 사진 사용권과 정확한 모델 일치를 사용자가 직접 확인한다.
 4. 증상 안내 카드를 보고 선택 모델의 공식 지원을 연다.
 5. 미해결·판정 불가·사용자 해결 보고를 수동으로 기록한다. 자동 성공은 없다.
 
-이 흐름은 사진 미리보기이며 카메라·모델 자동 식별·AR 추적이 아니다.
+이 흐름은 단일 사진 미리보기이며 연속 카메라·모델 자동 식별·AR 추적이 아니다.
 사진 또는 모델 변경·모델 미확인·이미지 오류 시 확인과 결과를 지운다.
 사진은 메모리에서만 사용하며 서버 전송·영구 보관하지 않는다.
 미검수 버튼 좌표·공식 조작 절차를 새로 게시하지 않고 공식 출처로 연결한다.
@@ -154,9 +175,9 @@ https://ca-svg-dev-4ca0.whiterock-2d71d661.japaneast.azurecontainerapps.io
 | [core](./core/) | 프레임워크 없는 Kotlin 도메인, 상태 머신, 좌표 및 포트 |
 | [app-android](./app-android/) | Compose, 로컬 사진 참조, ARCore, 한국어 ML Kit OCR, TTS, 암호화 단말 등록과 HTTPS 어댑터 |
 | [server](./server/) | FastAPI, 실제 Azure 어댑터, 인증, 후보 검색, 단계 판정과 조건부 세션 쓰기 |
-| [pipeline](./pipeline/) | 자체 자산 생성, 검수 자산 등록, 검색 활성화와 비공개 페어링 발급 |
+| [pipeline](./pipeline/) | 자체 자산 생성, 검수 자산 등록, 검색 활성화, 비공개 페어링 및 정적 웹 allowlist 패키징 |
 | [assets](./assets/) | 실모델 사진 출처, 4종 공유 시나리오 카탈로그, 합성 타깃·패널 지도·대화형 HTML |
-| [infra](./infra/) | 기본 서비스, 추가 사설 네트워크 및 앱 단독 배포 Bicep |
+| [infra](./infra/) | 기본 서비스, 사설 네트워크, API 단독 배포 및 별도 Free 정적 웹 Bicep |
 | [eval](./eval/) | 라벨 기반 식별, 정합, 완주 지표와 부족한 데이터 처리 |
 
 ARCore만 카메라를 소유한다. CameraX가 별도 카메라를 열지 않는다.
@@ -174,7 +195,11 @@ OCR은 표시 상태를 확인할 뿐 물리 버튼을 눌렀거나 부품을 �
 flowchart LR
     User["Galaxy 사용자"] --> UI["Compose UI: 모드·후보 확인"]
     UI --> Photo["로컬 사진 참조 어댑터: 메모리 전용"]
-    Browser["사진 참조 웹: 로컬 실행"] --> Sources["2종 모델 출처 카탈로그"]
+    Publish["허용 파일 패키징 → GitHub Actions"] --> SWA["Azure Static Web Apps Free / HTTPS"]
+    SWA --> Browser["폰 브라우저: 한 장 촬영·로컬 사진"]
+    Browser --> Sources["2종 모델 출처 카탈로그"]
+    Browser --> Manual
+    SWA --> Sim["4종 합성 시나리오: 화면 상태·추적 상실 시뮬레이션"]
     Photo --> Sources
     Photo --> Manual["사용권·모델 직접 확인 → 공식 지원 → 수동 보고"]
     UI --> Offline["오프라인 DEMO 어댑터"]
@@ -199,7 +224,7 @@ flowchart LR
 * 사진 참조는 [PhotoDemoScreen](./app-android/src/main/java/kr/demo/visualguide/PhotoDemoScreen.kt)과
   [사진 출처 카탈로그](./assets/products/catalog.json)를 사용하는 별도 외곽 어댑터다.
   브라우저도 같은 카탈로그를 읽는다. 사진은 로컬 메모리에서만 사용하고
-  카메라·core 상태 머신·API·클라우드의 성공 증거로 보내지 않는다.
+  AR 추적·core 상태 머신·API·클라우드의 성공 증거로 보내지 않는다.
 * 제품 이슈 DEMO는 [공유 카탈로그](./assets/scenarios/catalog.json)를
   Android와 웹이 함께 읽는다. 4종 기준 이미지를 ARCore에 등록해 탐지하고
   하나의 타깃이 현재 추적될 때만 제품 확인 후보를 표시한다.
@@ -208,8 +233,10 @@ flowchart LR
   클라우드 모드는 HTTPS 어댑터에서 서버가 승인한 단계만 표시한다.
 * Cosmos와 Blob은 Private Endpoint를 사용한다. Galaxy의 API ingress는 공용 HTTPS다.
   Search와 OpenAI까지 사설 연결이라고 표시하지 않는다.
-* GitHub Pages는 명시적으로 선택한 데모 HTML·합성 PNG·카탈로그만 제공한다.
-  카메라 업로드·인증·API를 호스팅하지 않는다.
+* Azure Static Web Apps와 GitHub Pages는 같은 [허용 목록 패키저](./pipeline/stage_web.py)로
+  HTML·합성 PNG·카탈로그·정적 호스트 설정 12개만 게시한다.
+  Azure 기본 화면은 모바일 사진 참조, 기존 Pages 기본 화면은 4종 합성 타깃이다.
+  API·SQLite·개인 사진·자격 증명은 포함하지 않는다. 웹은 기존 인증 API를 호출하지 않는다.
 * [실제 Azure 토폴로지](./docs/azure-architecture.md)와
   [API 계약](./docs/cloud-api-contract.md)에 네트워크·권한·요청 형식이 있다.
 
@@ -294,7 +321,7 @@ AI 확인은 별도 `/verify` 요청으로 현재 단계용 30초 증거를 발�
 | TV 화면과 리모컨 전환 | 대상 종류 선택과 추적 무효화 경계 | 검수된 TV 다중 대상 가이드·실증 없음 |
 | 필터 작업·SAM 3·Content Understanding | 현재 런타임에 포함하지 않음 | 별도 자산·안전 검수·범위 승인 필요 |
 | 초심자 무도움 완주 | 독립 라벨 평가 러너 | 초심자 5명 이상 시험 미실시 |
-| 외부 테스터 접근 | 공개 Release APK·체크섬, Pages PC 타깃 | 개발용 목업, 스토어·운영 서비스 아님 |
+| 외부 테스터 접근 | Azure HTTPS 모바일 웹, 공개 APK·체크섬, Pages PC 타깃 | 설치 없이 사진·합성 시험 가능, 네이티브 AR과 실제품 검증은 별도 |
 
 실제 모델 식별 Top-1 90%, Top-3 98%, 버튼 정합 p95 25% 이내,
 초심자 5명 중 4명 무도움 완주는 [제안 목표](./docs/research-review.md#제안하는-수용-기준)이며
@@ -364,7 +391,29 @@ uv run --no-sync pytest ..\eval\tests
 [검증 workflow](./.github/workflows/validate.yml)는 core·Android·API·평가 테스트,
 Ruff, APK 빌드와 lint를 실행하고 결과 및 APK를 Actions artifact로 남긴다.
 [Pages workflow](./.github/workflows/pages.yml)는 허용 목록의 합성 HTML·PNG·카탈로그만 게시한다.
-어느 workflow도 Azure 자격 증명을 사용하거나 유료 리소스를 배포하지 않는다.
+[Azure 웹 workflow](./.github/workflows/static-web.yml)는 같은 패키지를 기존 Free 정적 앱에 게시한다.
+배포 토큰은 GitHub 암호화 Secret `AZURE_STATIC_WEB_APPS_API_TOKEN`으로만 전달한다.
+검증·Pages workflow는 Azure 자격 증명을 사용하지 않는다. 어느 workflow도 유료 리소스를 생성하지 않는다.
+
+Azure 리소스는 `swa-vpr-web-dev-a277`, 리소스 그룹은 `rg-svg-dev-4ca0`,
+지역은 East Asia, SKU는 Free다. 정적 배포는 전역 제공되므로 처리·보관 위치 보장을 뜻하지 않는다.
+[독립 Bicep](./infra/static-web.bicep)은 Free만 허용하며 기존 API·DB·네트워크를 수정하지 않는다.
+추가 웹 비용은 무료 한도 내 $0이며 기존 유료 API 비용과 구분한다.
+무료 한도·정책에 막히면 중단하고 별도 승인 없이 유료 SKU로 전환하지 않는다.
+
+`main`의 웹 자산 변경은 자동 배포된다. 수동 재게시도 가능하다.
+
+```powershell
+gh workflow run static-web.yml --ref main --repo daeungo1/visual-product-recognition
+```
+
+로컬 검토는 기존 파일이 없는 새 출력 폴더에 패키징한다.
+같은 출력 폴더 재사용은 오래된 비공개 파일 혼입을 막기 위해 거부한다.
+
+```powershell
+.\server\.venv\Scripts\python.exe .\pipeline\stage_web.py --output .\.test-data\web-preview-new
+.\server\.venv\Scripts\python.exe -m http.server 8879 --bind 127.0.0.1 --directory .\.test-data\web-preview-new
+```
 
 Release APK는 검증한 빌드를 게시한다. Actions의 새 debug APK는 작업마다
 개발 서명이 달라질 수 있으므로 기존 설치본과 서명이 다르면 덮어쓸 수 없다.

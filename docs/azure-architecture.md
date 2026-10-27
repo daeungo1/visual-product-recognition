@@ -1,7 +1,7 @@
 ---
 title: Visual Guide 실제 Azure 구성
-description: Japan East 배포, 비공개 데이터 경로, 관리 ID, 재배포 및 비용 안내
-ms.date: 2026-10-23
+description: East Asia 무료 모바일 웹과 Japan East API, 비공개 데이터 경로, 재배포 및 비용 안내
+ms.date: 2026-10-27
 ms.topic: reference
 ---
 
@@ -13,17 +13,49 @@ ms.topic: reference
 | 구독 ID | `2cf925b6-80cb-4567-abda-5ccd3010aab5` |
 | 테넌트 | `f6d04047-ac77-4fc2-941f-798ed4d54fcf` |
 | 리소스 그룹 | `rg-svg-dev-4ca0` |
-| 지역 | `japaneast` |
+| API 지역 / 정적 웹 지역 | `japaneast` / `eastasia` |
+| 무료 정적 웹 | `swa-vpr-web-dev-a277`, Free |
 | API | `ca-svg-dev-4ca0` |
 | VNet 통합 환경 | `cae-svg-private-4ca0` |
 | 전용 설정 작업 | `job-svg-private-4ca0` |
 
-![실제 배포한 Azure 토폴로지](./azure-architecture.png)
+![기존 인증 API와 사설 데이터 경로 토폴로지](./azure-architecture.png)
 
 [Excalidraw 원본](./azure-architecture.excalidraw)은 로컬 편집기나
 Excalidraw에서 열어 수정할 수 있다.
 소프트웨어 및 실호출 결과는 [검증 기록](./verification.md)에서 확인한다.
 현재 합성 타깃 하나만 등록하며 실제 Samsung 및 Galaxy 실측을 의미하지 않는다.
+
+### 설치 없는 모바일 웹 경로
+
+[공개 모바일 웹](https://agreeable-coast-0b8033d00.5.azurestaticapps.net/)은
+[별도 Free Bicep](../infra/static-web.bicep)으로 추가했다.
+위 그림은 기존 API 경로이며 이 독립 정적 앱은
+[README의 전체 흐름](../README.md#아키텍처)에 구분했다.
+
+GitHub Actions → [허용 목록 패키징](../pipeline/stage_web.py) → Static Web Apps HTTPS →
+브라우저의 단일 사진 입력·수동 확인 또는 4종 합성 시뮬레이션으로 이어진다.
+사진은 로컬 메모리에만 쓰고 기존 API·DB로 전송하지 않는다.
+API 소스·SQLite·실제품 사진·인증 토큰은 배포하지 않는다.
+East Asia는 리소스 지역이며 전역 정적 전달의 데이터 위치 보장이 아니다.
+
+[웹 게시 workflow](../.github/workflows/static-web.yml)는
+GitHub 암호화 Secret `AZURE_STATIC_WEB_APPS_API_TOKEN`만 사용해 기존 앱에 콘텐츠를 올린다.
+`main` 웹 자산 변경이나 다음 수동 명령으로 재게시한다. 리소스 생성은 workflow 범위가 아니다.
+
+```powershell
+gh workflow run static-web.yml --ref main --repo daeungo1/visual-product-recognition
+```
+
+무료 정적 웹만 종료할 때는 기존 유료 API와 공유하는 리소스 그룹을 삭제하지 않는다.
+승인 후 다음 명령으로 이 정적 앱만 제거하고 GitHub 배포 Secret도 정리한다.
+무료 한도 내 추가 비용은 $0이며 기존 API·데이터·네트워크 비용은 별도다.
+
+```powershell
+az staticwebapp delete --name swa-vpr-web-dev-a277 --resource-group rg-svg-dev-4ca0 `
+  --subscription 2cf925b6-80cb-4567-abda-5ccd3010aab5 --yes
+gh secret delete AZURE_STATIC_WEB_APPS_API_TOKEN --repo daeungo1/visual-product-recognition
+```
 
 ## 서비스와 데이터 경로
 

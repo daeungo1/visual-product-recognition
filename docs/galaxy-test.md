@@ -1,6 +1,6 @@
 ---
 title: Galaxy에서 Visual Guide 시험하기
-description: 실제 Azure 연결과 오프라인 DEMO의 설치, 페어링, 추적 및 단계 확인 절차
+description: 설치 없는 모바일 웹과 Galaxy APK의 사진, 페어링, 추적 및 단계 확인 절차
 ms.date: 2026-10-27
 ms.topic: how-to
 ---
@@ -15,6 +15,31 @@ ms.topic: how-to
 
 ## 준비와 설치
 
+### APK 설치가 차단된 폰
+
+회사 단말 보안 정책을 우회하지 않고
+[Azure 모바일 웹](https://agreeable-coast-0b8033d00.5.azurestaticapps.net/)을 연다.
+APK·계정·페어링 없이 아래 흐름을 시험한다.
+
+1. 에어컨 AF90H19D35WN 또는 모니터 LS32HG802SKXKR을 선택한다.
+2. 사진 한 장 촬영 또는 로컬 JPEG/PNG 선택을 사용한다. 한도는 10 MiB·20 MP다.
+3. 사용권·정확한 모델을 직접 확인하고 사진 참조 안내를 시작한다.
+4. 모델별 공식 지원을 열고 미해결·판정 불가·사용자 해결 보고를 기록한다.
+5. 사진·모델 변경, 확인 해제, 모델 미확인, 초기화와 페이지 이탈 후
+   사진·안내·결과가 초기화되는지 확인한다.
+
+촬영 입력은 `capture="environment"`를 사용하지만 브라우저·MDM 정책이
+파일 선택기로 대체할 수 있다. HEIC 등 미지원 사진은 허용된 JPEG/PNG를 사용한다.
+사진은 서버로 전송하지 않는다. 촬영 원본의 단말 갤러리 보관은 카메라 앱 정책에 따른다.
+
+[4종 합성 웹 시나리오](https://agreeable-coast-0b8033d00.5.azurestaticapps.net/product-demo.html)에서
+제품 선택 → 노란 영역으로 가상 상태 변경 → 표시 확인 → 초기화를 시험한다.
+추적 상실 시뮬레이션은 안내·진행을 막아야 한다.
+이 웹은 실제 자동 모델 인식·ARCore·OCR·TTS·인증 클라우드 시험을 제공하지 않는다.
+390px 화면의 DOM 이벤트 검사는 통과했지만 물리 Galaxy 선택기·터치·촬영은 미검증이다.
+
+### 네이티브 APK
+
 * Android 8.0(API 26) 이상이며 [ARCore 지원 목록](https://developers.google.com/ar/devices)에 있는 Galaxy
 * Google Play Services for AR와 카메라 권한
 * 타깃을 표시할 PC 또는 두 번째 화면
@@ -26,7 +51,8 @@ ms.topic: how-to
 다운로드 무결성을 확인할 수 있다. 로컬 빌드 결과는 Git에 포함하지 않는다.
 패키지는 `kr.demo.visualguide`, 버전은 `0.2-demo`, 대상 SDK는 35다.
 개발용 서명이며 스토어 배포용이 아니다.
-main 미병합 개발 브랜치 빌드이며 기존 `latest`의 0.1과 구분한다.
+고정된 사전 릴리스 빌드이며 기존 `latest`의 0.1과 구분한다.
+이번 웹 게시로 기존 0.2 APK와 체크섬을 덮어쓰지 않는다.
 Knox나 회사 설치 정책이 차단하면 관리자에게 승인받고 정책을 우회하지 않는다.
 
 다운로드한 파일을 프로젝트 루트에 둔 경우, USB 디버깅이 허용된 기기는
