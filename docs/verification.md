@@ -1,9 +1,60 @@
 ---
 title: Visual Guide 구현 및 검증 기록
-description: 실모델 2종 사진 참조, 4종 합성 목업, APK 자동 검증 및 미실시 현장 시험
+description: 실모델 2종 사진 참조, 4종 합성 목업, 웹 카메라 AR, APK 자동 검증 및 미실시 현장 시험
 ms.date: 2026-10-27
 ms.topic: reference
 ---
+
+## 2026-10-27 웹 카메라 AR Overlay
+
+[공개 모바일 웹의 루트](https://agreeable-coast-0b8033d00.5.azurestaticapps.net/)는
+이제 카메라 AR 데모를 연다. 폰 카메라로 비출 합성 타깃은
+[product-demo.html?ar=1](https://agreeable-coast-0b8033d00.5.azurestaticapps.net/product-demo.html?ar=1)을
+PC 화면에 띄워 사용한다. 라이브러리와 WASM 없이 순수 JavaScript 모듈 11개로 구현했고
+커밋 [f04fd30](https://github.com/daeungo1/visual-product-recognition/commit/f04fd3079dd4ae8e18d1984590f3e165d1854fdf)에
+들어 있다. 카메라 영상은 기기 안에서만 분석하며 저장하거나 전송하지 않는다.
+
+| 항목 | 확인 결과 |
+|------|-----------|
+| 순수 JS 테스트 | 로컬과 공개 CI(Node 22.23.4)에서 90개 통과, 실패 0 (budget 10, camera 7, features 10, geometry 6, guide 18, overlay 19, session 10, tracker 10) |
+| Python·Ruff | API·평가·게시 테스트 113개 통과(AR 정적 계약 6개 추가), Ruff 전체 통과, 기존 외부 의존성 경고 1개 |
+| 변이 검사 | 정적 계약 변이 29개를 모두 검출하고 변이 없는 기준은 통과, 브라우저 저장소·영상 녹화·프레임 내보내기·Worker·외부 요청·합성 라벨 삭제·카메라 권한 확대·카탈로그 어긋남·게시 목록 누락·CSP 완화 포함 |
+| 변이로 찾은 결함 | 같은 자세에서 제품만 바꿔도 이전 제품이 유지되던 문제, 추적 상실 중 탭한 뒤의 거부 문구 오류, 자동 재시작 뒤 남던 이전 거부 문구 3건을 고치고 회귀 테스트 추가 |
+| 합성 측정 | 80회 중 오인식 0건(인식 77, 미인식 3), 등록 외 대상 추적 0건, 제품 교체 12회 모두 이전 제품 유지 없음, 손으로 든 듯한 합성 움직임(블러·노이즈 포함) 90프레임 모두 추적하고 최대 꼭짓점 오차 0.67 px |
+| 인식 범위 | 면적 6~50% 8단계 각 12회에서 오인식 0건, 타깃이 프레임의 11% 이상(분석 긴 변 512 px), 20% 이상(416 px), 27% 이상(336 px)이면 12회 모두 인식 |
+| PC 처리 시간 | 288×512 분석 프레임에서 추적 중 중앙값 약 11 ms, 새로 찾기 24~36 ms, 데스크톱 4회 실행 범위이며 폰은 미측정 |
+| 공개 사이트 흐름 | 합성 영상 모드(“시뮬레이션 · 실제 카메라 아님” 표시)에서 후보 확인, 증상 선택, Overlay 안내 1/3 단계(POWER) 표시, 수동 확인 뒤 다음 단계 진행과 완료 출처 `manual` 기록 |
+| 추적 상실·타깃 교체 | 추적 상실 시 Overlay 숨김까지 62 ms, 단계 유지, 확인 버튼 비활성. 같은 타깃이 돌아오면 41 ms에 같은 단계에서 재표시. 다른 타깃(세탁기)은 128 ms에 숨기고 218 ms에 후보 단계로 초기화하며 완료 기록 삭제. PC에서 한 번 잰 값 |
+| 연결 페이지 | `product-demo.html?ar=1`은 페이지 안 하이라이트를 숨기고 AR 데모로 연결, 일반 `product-demo.html`은 하이라이트 표시, `photo-demo.html`은 로드되며 AR 데모로 연결 |
+| 브라우저 보안 | 세 페이지 모두 CSP 위반 0, 콘솔 오류 0, 외부 요청 0 (AR 페이지 요청 21개는 모두 같은 출처) |
+| 공개 HTTPS | SWA 제공 파일 22개와 루트가 커밋 원본 바이트와 일치하고 호스트 설정은 404, GitHub Pages 미러도 22개와 루트 일치, AR 모듈 11개는 `text/javascript` |
+| 응답 헤더 | 루트와 `/ar/tracker.js`에서 CSP·no-cache·nosniff·DENY·no-referrer·Permissions-Policy(`camera=(self)`) 6개 확인 |
+| 부정 경로 | API·호스트 설정·서버 소스·README·Git 설정·테스트 파일·디렉터리·미존재 파일 등 10개 요청 모두 404 |
+| Android 로컬 빌드 | core 테스트 8개, app-android 단위 테스트 25개 통과(강제 재실행, 실패·오류 0), lint 오류 0·경고 5개(KTX 권장 4, 앱 아이콘 1), 로컬 디버그 APK 생성과 apksigner v2 검증, 저장소 assets 24개가 커밋 원본과 일치(줄바꿈 제외) |
+| 공개 CI | [Validate](https://github.com/daeungo1/visual-product-recognition/actions/runs/40509632169) 성공(Node·Python·Android 단계 포함), [Azure 웹 게시](https://github.com/daeungo1/visual-product-recognition/actions/runs/40509632177) 성공, [Pages](https://github.com/daeungo1/visual-product-recognition/actions/runs/40509632134) 성공 |
+| 미실시 | 폰 카메라의 인식 거리·속도·발열, 물리 Galaxy 설치·카메라·터치, 에뮬레이터, iOS Safari, 실제 삼성 제품, 인쇄한 타깃 인식, OCR·ARCore와의 동등성 |
+
+가상 카메라와 합성 영상 모드는 실제 단말 카메라가 아니다.
+측정값은 PC에서 합성 영상으로 얻은 결과이며 폰 카메라의 인식률이나 속도가 아니다.
+인식 대상은 등록된 합성 패널 4종뿐이다.
+삼성 제품 사진은 재배포하지 않았고 실제품 식별, 실제 버튼 좌표, 고장 해결 성공은 주장하지 않는다.
+
+Pages 미러는 `staticwebapp.config.json`을 효력 없는 일반 정적 파일로 제공한다.
+내용은 응답 헤더와 라우트 설정뿐이며 비밀 값은 없다.
+이전 기록의 lint 경고 9개와 달리 이번 오프라인 실행은 5개를 보고했다.
+이전 경고에 있던 의존성 권고 4개가 나오지 않았고 원인은 확인하지 않았다.
+
+이번 변경은 정적 웹 모듈, 게시 스크립트, CI 설정과 테스트에 한정한다.
+Kotlin core 계약, Android 소스, API 코드는 변경하지 않았다.
+아래 날짜별 기록의 수치(Python 107개, 브라우저 75개 등)는 당시 결과이며 이번 결과와 합산하지 않는다.
+공개 0.2 APK와 체크섬은 아래 사전 릴리스 기록 그대로 유지한다.
+로컬 디버그 APK는 별도 빌드 결과이며 고정 릴리스 파일과 동일하다고 주장하지 않는다.
+앱은 WebView를 쓰지 않아 APK에 들어간 웹 파일을 로드하지 않는다.
+
+```text
+Local debug APK SHA-256: FBD881163B94826451B60FBF5F667225DC43B63E25D68BAA53478961BBD3648E
+Fixed 0.2 release SHA-256: cb8889cd66ee6ee16f986d0c240cf694e2b0d89f646ef09ba4df395b533c3a41
+```
 
 ## 2026-10-27 설치 없는 Azure 모바일 웹
 
@@ -398,6 +449,7 @@ SHA-256: 54f9d85d57e27bd894af6953c1dcb274d4eb6745c5b39e8346e030c26ebc806f
 ## 미실시 현장 시험
 
 * Galaxy 설치, ARCore 지원, 카메라 권한 및 생명주기
+* 폰 브라우저 카메라 AR의 인식 거리·속도·발열, iOS Safari, 인쇄한 타깃 인식
 * 실제 카메라의 OCR 안정성, 정합 오차, 추적 손실 후 숨김 지연과 한국어 TTS
 * 실제 삼성 모델 Top-1/Top-3, 공용 리모컨과 본체 호환 확인 및 TV 메뉴
 * 모델별 필터 청소/교체의 공식 절차와 안전 검수

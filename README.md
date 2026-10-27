@@ -1,41 +1,75 @@
 ---
 title: Visual Product Recognition
-description: 설치 없는 모바일 웹, Galaxy 목업 설치, 시각 가이드 아키텍처 및 고객 요구사항 검증 상태
+description: 설치 없는 모바일 웹 카메라 AR Overlay, Galaxy 목업 설치, 시각 가이드 아키텍처 및 고객 요구사항 검증 상태
 ms.date: 2026-10-27
 ---
 
 ## Mock-up 테스트 앱 설치 및 바로 접속
 
+폰 카메라로 합성 제품 패널을 비추면 제품을 인식하고, 지금 조작할 위치에 Overlay가 따라붙는 웹 DEMO다.
+PC 또는 두 번째 화면에 아래 둘째 줄의 타깃을 띄우고, 폰에서 첫째 줄을 열어 `카메라 시작`을 누른다.
+
 | 용도 | 설치 및 접속 링크 |
 |------|------------------|
-| 폰에서 설치 없이 바로 시험 | [Azure 모바일 사진·카메라 한 장 DEMO](https://agreeable-coast-0b8033d00.5.azurestaticapps.net/) |
-| 웹에서 4종 시나리오 시험 | [에어컨·세탁기·냉장고·모니터 합성 Overlay](https://agreeable-coast-0b8033d00.5.azurestaticapps.net/product-demo.html) |
+| 폰에서 설치 없이 카메라 AR Overlay | [Azure 모바일 웹 카메라 AR DEMO](https://agreeable-coast-0b8033d00.5.azurestaticapps.net/) |
+| 카메라로 비출 합성 타깃 (PC·두 번째 화면) | [카메라 AR용 타깃 4종](https://agreeable-coast-0b8033d00.5.azurestaticapps.net/product-demo.html?ar=1) |
+| 카메라 없이 4종 시나리오 시험 | [에어컨·세탁기·냉장고·모니터 합성 Overlay](https://agreeable-coast-0b8033d00.5.azurestaticapps.net/product-demo.html) |
+| 폰 사진 한 장 참조 (모델 2종) | [에어컨·모니터 사진 참조 DEMO](https://agreeable-coast-0b8033d00.5.azurestaticapps.net/photo-demo.html) |
 | Galaxy 0.2 사전 시험 APK | [에어컨·모니터 사진 참조 APK](https://github.com/daeungo1/visual-product-recognition/releases/download/v0.2.0-photo-demo/app-android-debug.apk) |
 | 0.2 배포 정보 및 무결성 | [사진 참조 사전 릴리스](https://github.com/daeungo1/visual-product-recognition/releases/tag/v0.2.0-photo-demo), [APK SHA-256](https://github.com/daeungo1/visual-product-recognition/releases/download/v0.2.0-photo-demo/app-android-debug.apk.sha256) |
 | 기존 0.1 공개본 | [합성 Mock-up Release](https://github.com/daeungo1/visual-product-recognition/releases/tag/v0.1.0-mockup) |
 | PC 제품별 시나리오·타깃 | [에어컨·세탁기·냉장고·모니터 Overlay 목업](https://daeungo1.github.io/visual-product-recognition/) |
-| 웹 소스 | [모바일 사진 참조 HTML](./assets/photo-demo.html), [공유 모델 출처](./assets/products/catalog.json) |
+| 웹 소스 | [카메라 AR HTML](./assets/ar-demo.html), [AR 추적 모듈](./assets/ar/), [모바일 사진 참조 HTML](./assets/photo-demo.html), [공유 모델 출처](./assets/products/catalog.json) |
 | 설치·페어링·시험 순서 | [Galaxy 테스트 안내](./docs/galaxy-test.md) |
 | HTTPS API | [liveness](https://ca-svg-dev-4ca0.whiterock-2d71d661.japaneast.azurecontainerapps.io/healthz), [readiness](https://ca-svg-dev-4ca0.whiterock-2d71d661.japaneast.azurecontainerapps.io/readyz) |
 | 공개 소스 | [daeungo1/visual-product-recognition](https://github.com/daeungo1/visual-product-recognition) |
 
 > [!WARNING]
+> 웹 카메라 AR은 등록한 합성 패널 4종만 인식하며 실제 삼성 제품은 인식하지 않는다.
+> ARCore가 아니라 브라우저 안의 자체 특징점 추적기이며, 실제 폰·Galaxy 카메라 시험은 아직 하지 않았다.
 > 합성 추적·로컬 사진 참조용 개발 서명 APK이며 실제 삼성 제품 지원 앱이 아니다.
 > APK 컴파일과 자동 테스트는 Galaxy 설치·카메라·AR 정합 검증을 의미하지 않는다.
 > 설치가 차단된 폰은 위 Azure 웹을 사용한다. 단말 보안 정책을 우회하지 않는다.
-> 웹은 사진 참조·수동 결과·합성 단계 시험용이며 Android의 ARCore·OCR·TTS·인증 API 기능을 이식한 것은 아니다.
+> 웹은 Android의 ARCore·OCR·TTS·인증 API 기능을 이식한 것이 아니며 단계 완료는 수동 확인이다.
 > API 주소는 브라우저용 앱 화면이 아니며, 클라우드 이용에는 별도 단말 페어링이 필요하다.
 
 0.2 APK는 고정된 사전 릴리스이며 이번 웹 배포로 파일·태그·체크섬을 덮어쓰지 않았다.
-2026-10-27 Azure Free 정적 웹에 콘텐츠를 배포하고 익명 HTTPS로 확인했다.
-API·평가·게시 검사107개, core8개, Android25개와 공개 웹 DOM 검사75개를 확인했다.
+카메라 AR 변경은 순수 JS 추적·세션 검사 90개, API·평가·게시 검사 113개, core 8개,
+Android 25개를 통과했고 Android lint는 오류 0개, 경고 5개다.
+모두 합성 타깃과 가상 카메라를 쓰는 PC·CI 검사이며 폰 카메라 성능을 뜻하지 않는다.
 사진 가져오기 시험에는 소유한 합성 PNG 및 생성 이미지를 사용했고 실제품 인식으로 계산하지 않았다.
-Galaxy 설치·실제품·터치 시험은 미실시다.
-0.1 공개 웹의 37개 검사는 이전 결과이며 [검증 기록](./docs/verification.md)에 분리했다.
+폰 카메라의 인식 거리·속도, Galaxy 설치, 에뮬레이터, 실제품, 터치 시험은 미실시다.
+이전 배포의 사진 참조 공개 웹 DOM 검사 75개와 0.1 공개 웹 검사 37개는 이전 결과이며
+[검증 기록](./docs/verification.md)에 분리했다.
 
-### 폰 브라우저에서 설치 없이 시험
+### 폰 브라우저에서 카메라 AR Overlay 시험
 
-1. [모바일 웹](https://agreeable-coast-0b8033d00.5.azurestaticapps.net/)을
+1. PC 또는 두 번째 화면에서
+   [카메라 AR용 타깃](https://agreeable-coast-0b8033d00.5.azurestaticapps.net/product-demo.html?ar=1)을 열고
+   에어컨·세탁기·냉장고·모니터 중 한 합성 제품을 고른다. 화면 밝기를 높인다.
+2. 폰의 Chrome 또는 Samsung Internet에서
+   [카메라 AR DEMO](https://agreeable-coast-0b8033d00.5.azurestaticapps.net/)를 열고
+   `카메라 시작`을 눌러 권한을 허용한다. HTTPS 주소와 카메라 권한이 필요하다.
+3. 타깃 전체가 보이고 화면의 3분의 1 이상을 차지하도록 정면에서 비춘다.
+   반사와 흔들림을 피하고, PC 화면의 가는 줄무늬(모아레)가 보이면 거리나 각도를 바꾼다.
+4. 같은 등록 타깃이 연속 3프레임 인식되면 후보가 나타난다.
+   맞으면 `후보가 맞아요`를 누르고 증상을 확인한 뒤 `Overlay 안내 시작`을 누른다.
+5. 노란 Overlay는 현재 추적 중인 타깃 위에만 따라붙는다.
+   타깃을 가리거나 치우거나 다른 제품으로 바꾸면 곧바로 사라져야 한다. 이 동작을 직접 확인한다.
+6. Overlay가 가리킨 PC 타깃의 영역을 눌러 가상 표시를 바꾼 뒤 폰에서 `확인함 · 다음 단계`를 누른다.
+   단계 완료는 항상 사용자가 직접 누르는 수동 확인이며 앱이 상태를 자동 판정하지 않는다.
+7. 카메라가 없으면 `카메라 없이 합성 영상으로 확인`으로 같은 흐름을 가상 영상에서 시험한다.
+   `직접 선택`은 인식을 건너뛰므로 인식 성공으로 세지 않으며, 이때도 Overlay는 선택한 타깃이
+   현재 추적 중일 때만 보인다. 합성 영상의 `대상 없음`이나 등록되지 않은 대상은 `제품 확인 필요`로 남고 제품을 추정하지 않는다.
+
+AR 페이지의 `타깃 이미지 4종 보기`를 다른 화면에 띄워 비출 수도 있다.
+이 경우 표시 상태가 바뀌지 않으므로 Overlay 위치 확인에만 쓰고, 단계 실습에는 PC 타깃 화면이 알맞다.
+인쇄물 인식은 시험하지 않았다.
+카메라 영상은 폰 안에서만 분석하며 저장하거나 서버로 전송하지 않는다.
+
+### 폰 사진 참조 시험
+
+1. [사진 참조 웹](https://agreeable-coast-0b8033d00.5.azurestaticapps.net/photo-demo.html)을
    Chrome 또는 Samsung Internet에서 열고 에어컨·모니터 모델을 선택한다.
 2. `폰 카메라로 사진 한 장 촬영` 또는 로컬 사진 선택으로 사용권 있는 JPEG/PNG를 불러온다.
    브라우저·회사 단말 정책에 따라 촬영 대신 파일 선택기가 열릴 수 있다.
@@ -43,10 +77,11 @@ Galaxy 설치·실제품·터치 시험은 미실시다.
 4. 모델별 증상 참조 카드와 공식 지원을 확인하고 미해결·판정 불가·사용자 해결 보고를 선택한다.
 5. 사진·모델 변경, 확인 해제, 모델 미확인, 초기화와 페이지 이탈 시 이전 확인·결과가 지워지는지 확인한다.
 
-[4종 합성 Overlay](https://agreeable-coast-0b8033d00.5.azurestaticapps.net/product-demo.html)는
-폰 한 대에서도 시험할 수 있다. 제품을 고른 뒤 노란 영역을 눌러 가상 표시를 바꾸고
-`표시 상태 확인`으로 진행한다. 추적 상실 버튼은 시뮬레이션일 뿐 실제 카메라 추적이 아니다.
 사진은 웹 서버로 전송하지 않는다. 촬영 원본의 갤러리 저장 여부는 단말·카메라 앱 정책에 따른다.
+
+[4종 합성 Overlay](https://agreeable-coast-0b8033d00.5.azurestaticapps.net/product-demo.html)는
+카메라 없이 폰 한 대에서도 시험할 수 있다. 제품을 고른 뒤 노란 영역을 눌러 가상 표시를 바꾸고
+`표시 상태 확인`으로 진행한다. 추적 상실 버튼은 시뮬레이션일 뿐 실제 카메라 추적이 아니다.
 
 ### Galaxy APK 카메라 추적 시험
 
@@ -75,7 +110,7 @@ Galaxy 설치·실제품·터치 시험은 미실시다.
 2026 제품군의 두 모델을 공식 페이지와 대조했다. 검색 요약의 잘못된 연식과
 번들·세부 모델 혼동을 그대로 채택하지 않았다.
 공식 사진의 APK·공개 저장소 재배포 권한은 확인되지 않아 사진 파일은 내장하지 않았다.
-[공개 모바일 웹 DEMO](https://agreeable-coast-0b8033d00.5.azurestaticapps.net/) 또는
+[사진 참조 웹 DEMO](https://agreeable-coast-0b8033d00.5.azurestaticapps.net/photo-demo.html) 또는
 APK `에어컨·모니터 실모델 사진 참조 DEMO`에서 아래 순서로 시험한다.
 
 1. 모델을 선택하고 공식 사진 원본 페이지에서 해당 모델을 확인한다.
@@ -96,6 +131,53 @@ Python 환경은 아래 빌드·검증 절차로 먼저 준비한다.
 ```powershell
 .\server\.venv\Scripts\python.exe -m http.server 8879 --bind 127.0.0.1 --directory .\assets
 ```
+
+### 웹 카메라 AR Overlay
+
+고객 시나리오의 “비춤 → 인식 → 해결 Overlay”를 설치 없이 폰 브라우저에서 시험하는 PoC다.
+등록한 합성 패널 4종만 인식하며 삼성 실제 제품은 인식하지 않는다.
+Android 앱의 ARCore·OCR 경로와는 별개이고 전체가 순수 JavaScript다.
+라이브러리·WASM·Worker가 없고 영상은 폰 안에서만 분석하며 저장하거나 전송하지 않는다.
+
+| 처리 단계 | 동작 | 코드 |
+|-----------|------|------|
+| 카메라 | 후면 카메라를 열고 기기 속도에 맞춰 분석 크기를 조절한다. 프레임은 메모리에서만 쓴다 | [camera.js](./assets/ar/camera.js), [budget.js](./assets/ar/budget.js) |
+| 특징점 | 그레이 프레임에서 FAST-9 코너와 방향 보정 BRIEF-256 기술자를 뽑는다 | [features.js](./assets/ar/features.js) |
+| 인식·추적 | 등록 타깃 4종과 매칭하고 RANSAC 호모그래피로 타깃 꼭짓점을 구한다. 비슷한 후보가 있으면 미확정이다 | [tracker.js](./assets/ar/tracker.js), [geometry.js](./assets/ar/geometry.js) |
+| 증거 규칙 | 후보는 연속 3프레임, 사용자 확인, 500 ms 이내 최신 관측, 단계 수동 확인이 필요하다 | [session.js](./assets/ar/session.js) |
+| Overlay | 카탈로그의 정규화 좌표를 현재 호모그래피로 투영하고 추적 중에만 그린다 | [overlay.js](./assets/ar/overlay.js) |
+| 안내 패널 | 세션 상태에서 문구와 버튼을 도출하고 미확정·상실을 비성공 상태로 표시한다 | [guide.js](./assets/ar/guide.js) |
+
+Overlay는 현재 프레임에서 등록 타깃을 추적하는 동안에만 그린다.
+타깃 상실, 일시 중지, 다른 타깃, 오래된 관측이면 즉시 숨기며 기억한 자세나 고정 화면 좌표로 대신하지 않는다.
+중복·이전 단계·오래된 확인은 거절하고, 등록되지 않은 대상이나 모호한 후보는 `제품 확인 필요`로 남긴다.
+`직접 선택`은 인식 성공으로 세지 않는다.
+
+아래 측정은 모두 합성 영상과 PC 실행 결과이며 실제 폰이나 실제품의 결과가 아니다.
+
+| 항목 | 결과 | 조건 |
+|------|------|------|
+| 오인식 | 80회 중 0건 (정상 인식 77회, 미인식 3회) | 회전 ±35°, 기울기 ±25°, 블러·노이즈·밝기 변화를 준 합성 프레임 |
+| 등록 외 대상 | 추적 0건 | 미등록 합성 제품과 배경만 있는 프레임 |
+| 제품 전환 | 12가지 전환 모두 이전 제품을 다시 보고하지 않고 새 제품을 2프레임 이내 인식 | 같은 자세에서 화면만 다른 합성 제품으로 교체 |
+| 추적 정밀도 | 최대 꼭짓점 오차 0.67 px | 손으로 든 듯한 90프레임 합성 시퀀스 |
+| 인식 범위 | 타깃 면적이 프레임 면적의 11% 이상(분석 긴 변 512 px), 20% 이상(416 px), 27% 이상(336 px)일 때 12회 모두 인식 | 면적 6~50% 8단계 각 12회, 오인식 0건 |
+| PC 처리 시간 | 288×512 분석 프레임에서 추적 중 중앙값 약 11 ms, 새로 찾기 중앙값 24~36 ms | 데스크톱 4회 실행 범위, 폰은 미측정 |
+
+표의 면적보다 작게 비추면 일부 또는 전부 인식하지 못했고 오인식은 없었다.
+35%와 50%는 세 단계 모두 12회 모두 인식했으므로 화면의 3분의 1 이상을 채우도록 안내한다.
+타깃이 프레임을 넘치면 추적기는 미확정 또는 없음으로 판정했고 다른 제품으로 오인하지 않았다.
+Overlay는 마지막으로 분석한 프레임을 따르므로 PC 합성 영상에서 약 0.1~0.3초 늦다.
+분석이 오래 걸려 관측이 500 ms보다 오래되면 Overlay를 숨긴다. 의도한 보수적 동작이다.
+
+남은 한계는 다음과 같다.
+
+* 합성 패널 4종만 인식한다. 삼성 실제 제품 사진은 인식하지도 포함하지도 않는다.
+* 학습한 AI 모델이 아니라 특징점 매칭이다. 무늬가 적거나 반사·흔들림·모아레가 심하면 추적이 약해진다.
+* 폰 카메라, Galaxy, iOS Safari에서 인식 거리·속도·발열은 측정하지 않았다.
+* 단계 완료는 사용자가 누르며 화면 상태나 고장 해결을 자동 판정하지 않는다.
+* 사용자가 자기 제품 사진을 등록하는 모드는 아직 없다. 실제품 버튼 좌표와 안내 문구는
+  출처·적용 모델·사람 검수가 있어야 게시할 수 있어 다음 단계로 남겼다.
 
 ### 기존 카메라 추적 합성 DEMO
 
@@ -136,6 +218,8 @@ Cosmos와 Blob은 공용 접근을 차단하고 VNet의 Private Endpoint로 연�
 
 ## 바로 시험하기
 
+* [설치 없는 카메라 AR 웹 DEMO (폰 브라우저)](https://agreeable-coast-0b8033d00.5.azurestaticapps.net/)
+* [AR 시험용 PC·보조 화면 타깃](https://agreeable-coast-0b8033d00.5.azurestaticapps.net/product-demo.html?ar=1)
 * [설치용 APK와 체크섬](https://github.com/daeungo1/visual-product-recognition/releases/latest)
 * [4종 제품 이슈·Overlay 웹 목업](https://daeungo1.github.io/visual-product-recognition/)
 * [기존 HTTPS 시나리오용 합성 리모컨](https://daeungo1.github.io/visual-product-recognition/demo-target.html)
@@ -176,7 +260,9 @@ https://ca-svg-dev-4ca0.whiterock-2d71d661.japaneast.azurecontainerapps.io
 | [app-android](./app-android/) | Compose, 로컬 사진 참조, ARCore, 한국어 ML Kit OCR, TTS, 암호화 단말 등록과 HTTPS 어댑터 |
 | [server](./server/) | FastAPI, 실제 Azure 어댑터, 인증, 후보 검색, 단계 판정과 조건부 세션 쓰기 |
 | [pipeline](./pipeline/) | 자체 자산 생성, 검수 자산 등록, 검색 활성화, 비공개 페어링 및 정적 웹 allowlist 패키징 |
-| [assets](./assets/) | 실모델 사진 출처, 4종 공유 시나리오 카탈로그, 합성 타깃·패널 지도·대화형 HTML |
+| [assets](./assets/) | 실모델 사진 출처, 4종 공유 시나리오 카탈로그, 합성 타깃·패널 지도·대화형 HTML, 웹 카메라 AR 모듈 |
+| [assets/ar](./assets/ar/) | 브라우저용 순수 JavaScript AR: 특징점 추출, 호모그래피 추적기, 증거 세션, Overlay·안내 패널 도출, 카메라 |
+| [web-tests](./web-tests/) | AR 모듈의 Node 테스트 90개. 합성 프레임과 모의 카메라를 쓰며 DOM·네트워크 없이 실행 |
 | [infra](./infra/) | 기본 서비스, 사설 네트워크, API 단독 배포 및 별도 Free 정적 웹 Bicep |
 | [eval](./eval/) | 라벨 기반 식별, 정합, 완주 지표와 부족한 데이터 처리 |
 
@@ -200,6 +286,10 @@ flowchart LR
     Browser --> Sources["2종 모델 출처 카탈로그"]
     Browser --> Manual
     SWA --> Sim["4종 합성 시나리오: 화면 상태·추적 상실 시뮬레이션"]
+    SWA --> WebAR["폰 브라우저 카메라 AR: 순수 JavaScript, 영상은 기기 안에서만"]
+    WebAR --> WebTrack["특징점 추적기: FAST·BRIEF·RANSAC 호모그래피, 등록 4종"]
+    WebTrack --> WebSession["웹 가이드 세션: 후보 3프레임·사용자 확인·500 ms 최신 관측"]
+    WebSession --> WebOverlay["추적 중일 때만 Overlay 투영, 상실·중지·변경 시 숨김"]
     Photo --> Sources
     Photo --> Manual["사용권·모델 직접 확인 → 공식 지원 → 수동 보고"]
     UI --> Offline["오프라인 DEMO 어댑터"]
@@ -233,9 +323,13 @@ flowchart LR
   클라우드 모드는 HTTPS 어댑터에서 서버가 승인한 단계만 표시한다.
 * Cosmos와 Blob은 Private Endpoint를 사용한다. Galaxy의 API ingress는 공용 HTTPS다.
   Search와 OpenAI까지 사설 연결이라고 표시하지 않는다.
+* 웹 카메라 AR은 [순수 JavaScript 모듈](./assets/ar/)이며 core와 Android 코드를 공유하지 않는다.
+  같은 [공유 카탈로그](./assets/scenarios/catalog.json)와 합성 PNG 4종을 등록 타깃으로 읽는다.
+  추가 네트워크 요청은 카탈로그 읽기와 타깃 이미지 로드뿐이고 영상은 폰 안에서만 분석한다.
+  Android의 ARCore 경로를 대체하지 않는다.
 * Azure Static Web Apps와 GitHub Pages는 같은 [허용 목록 패키저](./pipeline/stage_web.py)로
-  HTML·합성 PNG·카탈로그·정적 호스트 설정 12개만 게시한다.
-  Azure 기본 화면은 모바일 사진 참조, 기존 Pages 기본 화면은 4종 합성 타깃이다.
+  HTML·AR 모듈·합성 PNG·카탈로그·정적 호스트 설정 24개만 게시한다(`index.html`은 진입 페이지 복사본).
+  Azure 기본 화면은 웹 카메라 AR, 기존 Pages 기본 화면은 4종 합성 타깃이다.
   API·SQLite·개인 사진·자격 증명은 포함하지 않는다. 웹은 기존 인증 API를 호출하지 않는다.
 * [실제 Azure 토폴로지](./docs/azure-architecture.md)와
   [API 계약](./docs/cloud-api-contract.md)에 네트워크·권한·요청 형식이 있다.
@@ -301,6 +395,32 @@ AI 확인은 별도 `/verify` 요청으로 현재 단계용 30초 증거를 발�
 수동 확인과 자동 확인은 출처를 분리한다.
 사진은 버튼을 명시적으로 누를 때만 보내며, 연속 카메라 프레임을 서버에 업로드하지 않는다.
 
+### 웹 카메라 AR 증거 흐름
+
+폰 브라우저의 AR은 서버나 클라우드를 거치지 않고 같은 증거 원칙을 기기 안에서 적용한다.
+증거 규칙은 [session.js](./assets/ar/session.js), 화면에 그릴 도형은 [overlay.js](./assets/ar/overlay.js),
+안내 문구와 버튼 상태는 [guide.js](./assets/ar/guide.js)가 순수 함수로 결정한다.
+
+```mermaid
+flowchart LR
+    Frame["폰 카메라 프레임"] --> Gray["기기 안에서 그레이 변환·축소"]
+    Gray --> Match["특징점 매칭 + RANSAC 호모그래피"]
+    Match -->|"등록 타깃 1개가 연속 3프레임"| Candidate["후보 표시: 자동 확정 없음"]
+    Match -->|"미등록·모호·인식 실패"| Unknown["제품 확인 필요: Overlay 없음"]
+    Candidate -->|"사용자: 후보가 맞아요"| Symptom["증상 확인"]
+    Symptom -->|"사용자: Overlay 안내 시작"| Guiding["단계 안내"]
+    Guiding -->|"선택 타깃을 현재 추적 + 500 ms 이내 관측"| Draw["호모그래피로 투영한 Overlay"]
+    Guiding -->|"상실·일시정지·다른 타깃·오래된 관측"| Hide["Overlay 숨김"]
+    Draw -->|"사용자: 확인함 · 다음 단계"| Next["다음 단계, 마지막이면 수동 완료"]
+```
+
+1. 후보는 같은 등록 타깃이 연속 3프레임 추적될 때만 생기며 사용자가 확인해야 한다.
+2. 제품 확인과 모든 Overlay는 선택한 타깃의 500 ms 이내 관측을 요구한다.
+3. 단계는 현재 보이는 단계에 대해 순서대로 한 번만 확인할 수 있다.
+   중복, 이전 단계, 오래된 관측, 추적 중이 아닌 상태의 확인은 거절한다.
+4. 페이지가 숨겨지거나 카메라가 멈추면 이전 관측을 모두 무효화한다.
+5. `직접 선택`은 인식 성공으로 세지 않으며 이 데모의 완료 출처는 항상 수동이다.
+
 ## 고객 요구사항 대비 구현과 부족한 근거
 
 제공된 별도 고객 승인 PRD는 없다. 아래 항목은 직접 요청한
@@ -310,7 +430,7 @@ AI 확인은 별도 `/verify` 요청으로 현재 단계용 30초 증거를 발�
 
 | 요구 | 현재 구현·검증 | 판정 또는 남은 작업 |
 |------|----------------|---------------------|
-| 제품을 비추면 증상별 Overlay | 에어컨·세탁기·냉장고·모니터 합성 타깃 탐지·확인·증상·추적 안내 | 오프라인 목업 구현, 일반 삼성 실물 범용 인식 아님 |
+| 제품을 비추면 증상별 Overlay | 웹: 폰 카메라가 합성 패널 4종을 인식하고 추적 중에만 Overlay(PC·가상 카메라 검증). Android: 합성 타깃 탐지·확인·증상·추적 안내 | 합성 패널 한정 목업. 폰·Galaxy 실카메라 시험 미실시, 일반 삼성 실물 범용 인식 아님 |
 | Galaxy 설치형 안내 | Compose·ARCore·OCR·TTS, APK와 lint | 컴파일 검증, 실기기 미검증 |
 | 제품 식별·후보 확인 | SigLIP2·Search·VLM, unknown과 사용자 확인 구분 | 합성 자산만 확인, 실제품 정확도 미측정 |
 | 움직이는 대상 버튼 정합 | 현재 FULL_TRACKING에서만 지도 좌표 투영 | 추적 상실 차단 구현, Galaxy p95 오차 미측정 |
@@ -321,7 +441,7 @@ AI 확인은 별도 `/verify` 요청으로 현재 단계용 30초 증거를 발�
 | TV 화면과 리모컨 전환 | 대상 종류 선택과 추적 무효화 경계 | 검수된 TV 다중 대상 가이드·실증 없음 |
 | 필터 작업·SAM 3·Content Understanding | 현재 런타임에 포함하지 않음 | 별도 자산·안전 검수·범위 승인 필요 |
 | 초심자 무도움 완주 | 독립 라벨 평가 러너 | 초심자 5명 이상 시험 미실시 |
-| 외부 테스터 접근 | Azure HTTPS 모바일 웹, 공개 APK·체크섬, Pages PC 타깃 | 설치 없이 사진·합성 시험 가능, 네이티브 AR과 실제품 검증은 별도 |
+| 외부 테스터 접근 | Azure HTTPS 모바일 웹(카메라 AR·사진 참조·합성 시험), 공개 APK·체크섬, Pages PC 타깃 | 설치 없이 폰 브라우저로 시험 가능, 폰 실카메라·네이티브 AR·실제품 검증은 별도 |
 
 실제 모델 식별 Top-1 90%, Top-3 98%, 버튼 정합 p95 25% 이내,
 초심자 5명 중 4명 무도움 완주는 [제안 목표](./docs/research-review.md#제안하는-수용-기준)이며
@@ -379,6 +499,15 @@ uv run --no-sync ruff check src tests
 uv run --no-sync pytest ..\eval\tests
 ```
 
+웹 카메라 AR 모듈은 Node 22 이상으로 시험한다. 설치할 의존성이 없고 합성 프레임과
+모의 카메라만 쓴다. CI와 같은 호출은 저장소 루트에서 다음과 같다.
+
+```powershell
+Set-Location ..
+$files = Get-ChildItem .\web-tests -Filter *.test.mjs | ForEach-Object { $_.FullName }
+node --test @files
+```
+
 연결 모드의 기본 URL은 공개 주소일 뿐 자격 증명이 아니다.
 미설정 빌드는 앱에서 HTTPS 원점을 입력할 수 있다.
 기업 네트워크에서는 승인된 패키지 미러를 사용하며 TLS 검증을 끄지 않는다.
@@ -388,9 +517,9 @@ uv run --no-sync pytest ..\eval\tests
 
 ### 공개 저장소의 반복 검증과 배포
 
-[검증 workflow](./.github/workflows/validate.yml)는 core·Android·API·평가 테스트,
+[검증 workflow](./.github/workflows/validate.yml)는 core·Android·API·평가·웹 AR Node 테스트,
 Ruff, APK 빌드와 lint를 실행하고 결과 및 APK를 Actions artifact로 남긴다.
-[Pages workflow](./.github/workflows/pages.yml)는 허용 목록의 합성 HTML·PNG·카탈로그만 게시한다.
+[Pages workflow](./.github/workflows/pages.yml)는 허용 목록의 합성 HTML·AR 모듈·PNG·카탈로그만 게시한다.
 [Azure 웹 workflow](./.github/workflows/static-web.yml)는 같은 패키지를 기존 Free 정적 앱에 게시한다.
 배포 토큰은 GitHub 암호화 Secret `AZURE_STATIC_WEB_APPS_API_TOKEN`으로만 전달한다.
 검증·Pages workflow는 Azure 자격 증명을 사용하지 않는다. 어느 workflow도 유료 리소스를 생성하지 않는다.
@@ -449,6 +578,9 @@ uv run --no-sync uvicorn guide_api.main:app --app-dir src --host 127.0.0.1 --por
 평가 러너는 데이터가 부족하면 수치를 꾸미지 않고 미측정 상태를 표시한다.
 SAM 3, Content Understanding, 실제 삼성 필터 작업 및 TV 메뉴 자산은
 현재 런타임의 구현 또는 검증 완료 기능으로 표시하지 않는다.
+웹 카메라 AR의 인식 범위·속도·정확도는 합성 영상과 PC에서만 측정했다.
+폰 카메라·Galaxy·iOS 시험, 사용자가 자기 제품 사진을 등록하는 모드, 실제 삼성 제품 인식은
+구현하지 않았거나 시험하지 않았다.
 
 테스트 리소스는 계속 과금된다. 종료 시 [리소스 정리 안내](./docs/azure-architecture.md#비용과-정리)를
 확인한다. 소스는 별도의 공개 저장소로 관리하며 다른 상위 Git 저장소에는
