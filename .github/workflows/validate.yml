@@ -31,6 +31,9 @@ jobs:
         with:
           version: '0.11.8'
           python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - name: Restore locked API test dependencies
         run: uv sync --project .\server --frozen --extra cloud
       - name: Test API and evaluation
@@ -39,6 +42,11 @@ jobs:
           uv run --no-sync pytest tests ..\eval\tests
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           uv run --no-sync ruff check src tests ..\pipeline ..\eval
+      - name: Test web camera AR modules
+        run: |
+          $files = Get-ChildItem .\web-tests -Filter *.test.mjs | ForEach-Object { $_.FullName }
+          node --test @files
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Test, lint and compile Android mock-up
         run: |
           .\gradlew.bat --no-daemon --max-workers=2 --console=plain `

@@ -4,7 +4,25 @@ import argparse
 import shutil
 from pathlib import Path
 
+ENTRY_PAGES = ("ar-demo.html", "photo-demo.html", "product-demo.html")
+DEFAULT_ENTRY = "ar-demo.html"
+
+AR_MODULES = (
+    "ar/app.js",
+    "ar/budget.js",
+    "ar/camera.js",
+    "ar/features.js",
+    "ar/geometry.js",
+    "ar/guide.js",
+    "ar/image.js",
+    "ar/overlay.js",
+    "ar/session.js",
+    "ar/synthetic.js",
+    "ar/tracker.js",
+)
+
 PUBLIC_FILES = (
+    "ar-demo.html",
     "photo-demo.html",
     "product-demo.html",
     "demo-target.html",
@@ -16,14 +34,15 @@ PUBLIC_FILES = (
     "scenarios/washer.png",
     "scenarios/refrigerator.png",
     "scenarios/monitor.png",
+    *AR_MODULES,
 )
 
 
-def stage_web(assets: Path, output: Path, *, entry: str = "photo-demo.html") -> None:
+def stage_web(assets: Path, output: Path, *, entry: str = DEFAULT_ENTRY) -> None:
     assets = assets.resolve()
     if output.resolve().is_relative_to(assets):
         raise ValueError("The public output must be outside the source assets.")
-    if entry not in ("photo-demo.html", "product-demo.html"):
+    if entry not in ENTRY_PAGES:
         raise ValueError("Unknown public home page.")
     for name in PUBLIC_FILES:
         source = assets / name
@@ -45,9 +64,7 @@ def create_parser() -> argparse.ArgumentParser:
         "--assets", type=Path, default=Path(__file__).resolve().parents[1] / "assets"
     )
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument(
-        "--entry", choices=("photo-demo.html", "product-demo.html"), default="photo-demo.html"
-    )
+    parser.add_argument("--entry", choices=ENTRY_PAGES, default=DEFAULT_ENTRY)
     return parser
 
 

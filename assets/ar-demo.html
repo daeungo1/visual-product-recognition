@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>카메라 AR Overlay 데모 · 합성 타깃</title>
+<style>
+:root { --ink:#15202b; --muted:#53606c; --line:#c9d1d9; --bg:#f4f6f8; --accent:#0b5cad; --aspect:0.5625; }
+* { box-sizing:border-box; }
+[hidden] { display:none !important; }
+/* Notes above the guidance appear and disappear; keep the pinned camera block where scrollIntoView put it. */
+html, body { overflow-anchor:none; }
+body { margin:0; background:var(--bg); color:var(--ink); line-height:1.5;
+  font-family:system-ui,-apple-system,"Segoe UI","Noto Sans KR","Malgun Gothic",sans-serif; }
+header { max-width:1040px; margin:0 auto; padding:8px 14px 0; }
+main { max-width:1040px; margin:0 auto; padding:6px 14px 14px; }
+h1 { margin:0 0 4px; font-size:1.1rem; }
+h2 { margin:0 0 6px; font-size:1.05rem; }
+a { color:var(--accent); }
+.notice { margin:4px 0; padding:6px 10px; border-left:4px solid #e8710a; background:#fff4e5; font-size:.82rem; line-height:1.4; }
+.layout { display:block; }
+.layout > section + section { margin-top:10px; }
+/* While a source runs the camera block stays on screen and the guidance scrolls underneath it. */
+@media (max-width:859px) {
+  body[data-source="camera"] .cam, body[data-source="sim"] .cam {
+    position:sticky; top:0; z-index:5; padding:6px 0 4px; background:var(--bg); box-shadow:0 8px 8px -8px rgba(0,0,0,.35);
+  }
+}
+.card { margin:12px 0; padding:12px 14px; background:#fff; border:1px solid var(--line); border-radius:8px; }
+.card ol, .card ul { margin:6px 0 0; padding-left:1.2rem; }
+.card li { margin:3px 0; }
+.card code { padding:1px 4px; background:#eef1f4; border-radius:4px; font-size:.9em; }
+summary { cursor:pointer; font-weight:600; }
+
+#stage { position:relative; width:min(100%,calc(50vh * var(--aspect))); max-width:720px; margin:0 auto;
+  aspect-ratio:var(--aspect); min-height:160px; overflow:hidden; background:#000; border-radius:8px; }
+@supports (height:1svh) { #stage { width:min(100%,calc(50svh * var(--aspect))); } }
+#stage video, #stage canvas { position:absolute; top:0; left:0; width:100%; height:100%; object-fit:fill; display:block; }
+#overlay { pointer-events:none; }
+.placeholder { position:absolute; top:50%; left:0; right:0; margin:0; padding:0 16px; transform:translateY(-50%);
+  text-align:center; color:#d7dde3; font-size:.95rem; }
+.chip { position:absolute; top:8px; left:8px; max-width:calc(100% - 16px); padding:3px 10px; border-radius:999px;
+  background:#555; color:#fff; font-size:.8rem; font-weight:600; }
+.chip[data-tone="ok"] { background:#1b7f3b; }
+.chip[data-tone="search"] { background:#2d3a46; }
+.chip[data-tone="warn"] { background:#ffd54a; color:#1d1d1d; }
+.badge { position:absolute; bottom:8px; left:8px; padding:2px 8px; border-radius:6px; background:rgba(0,0,0,.7);
+  color:#fff; font-size:.72rem; }
+.statusrow { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:6px 0 0; }
+.hud { flex:1 1 auto; margin:0; color:var(--muted); font:.68rem/1.3 ui-monospace,Consolas,monospace; min-height:1em; }
+.statusrow button { flex:none; min-height:36px; padding:0 12px; }
+
+.row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:8px 0; }
+#simRow { margin:4px 0 0; }
+#simRow select { min-height:36px; }
+button, select { min-height:44px; padding:0 14px; border:1px solid var(--line); border-radius:8px; font:inherit; background:#fff; color:var(--ink); }
+button { touch-action:manipulation; cursor:pointer; }
+button.primary { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600; }
+button:disabled { opacity:.45; cursor:not-allowed; }
+button:focus-visible, select:focus-visible, summary:focus-visible, a:focus-visible { outline:3px solid #ffb300; outline-offset:2px; }
+label { font-size:.9rem; }
+
+#panel { padding:12px 14px; background:#fff; border:1px solid var(--line); border-radius:8px; }
+#panel p { margin:6px 0; }
+.message { font-weight:600; }
+.detail, .note { color:var(--muted); font-size:.9rem; }
+.alert { padding:6px 10px; background:#fff4e5; border-left:4px solid #e8710a; font-size:.9rem; }
+.error { margin:6px 0; color:#b42318; font-weight:600; font-size:.92rem; }
+.targets { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; margin:8px 0 0; padding:0; list-style:none; }
+.targets img { display:block; width:100%; height:auto; border:1px solid var(--line); background:#fff; }
+.targets figcaption { font-size:.8rem; text-align:center; }
+
+@media (min-width:860px) {
+  .layout { display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); gap:12px; align-items:start; }
+  .layout > section + section { margin-top:0; }
+  #stage { width:min(100%,calc(70svh * var(--aspect))); margin:0; }
+}
+@media (prefers-reduced-motion:reduce) { * { scroll-behavior:auto !important; } }
+</style>
+</head>
+<body data-source="none">
+<header>
+  <h1>카메라 AR Overlay 데모</h1>
+  <p class="notice"><strong>합성 데모</strong> · 가상 제품 패널 4종만 인식합니다. 삼성 제품·공식 절차·실제 진단이 아닙니다.</p>
+</header>
+<main>
+  <div class="layout">
+    <section id="cam" class="cam" aria-label="카메라 화면">
+      <div id="stage" role="group" aria-label="카메라 화면과 Overlay">
+        <video id="video" playsinline muted autoplay hidden></video>
+        <canvas id="sim" hidden></canvas>
+        <canvas id="overlay" aria-hidden="true"></canvas>
+        <p id="placeholder" class="placeholder">카메라를 시작하거나 합성 영상으로 확인해 보세요.<br>카메라 영상은 이 기기에서만 분석하며 저장하거나 전송하지 않습니다.</p>
+        <span id="chip" class="chip" data-tone="idle">대기 중</span>
+        <span id="badge" class="badge" hidden></span>
+      </div>
+      <div class="statusrow">
+        <p id="hud" class="hud" aria-hidden="true"></p>
+        <button id="stopSource" type="button" hidden>중지</button>
+      </div>
+      <div class="row">
+        <button id="startCamera" class="primary" type="button" disabled>카메라 시작</button>
+        <button id="startSim" type="button" disabled>카메라 없이 합성 영상으로 확인</button>
+      </div>
+      <div id="simRow" class="row" hidden>
+        <label for="simTarget">합성 영상 속 대상</label>
+        <select id="simTarget"></select>
+      </div>
+      <p id="prepare" class="note" role="status">타깃 불러오는 중…</p>
+      <p id="error" class="error" role="alert" hidden></p>
+    </section>
+
+    <section id="panel" aria-labelledby="heading">
+      <h2 id="heading">1. 제품 찾기</h2>
+      <p id="message" class="message" role="status"></p>
+      <p id="detail" class="detail" hidden></p>
+      <div class="row">
+        <button id="confirmProduct" class="primary" type="button" hidden>후보가 맞아요</button>
+        <button id="start" class="primary" type="button" hidden>Overlay 안내 시작</button>
+        <button id="step" class="primary" type="button" hidden>확인함 · 다음 단계</button>
+        <button id="restart" type="button" hidden>처음부터 다시</button>
+      </div>
+      <p id="refusal" class="error" role="alert" hidden></p>
+      <p id="overlayNote" class="note" hidden></p>
+      <p id="sourceNote" class="note" hidden></p>
+      <p id="alert" class="alert" role="status" hidden></p>
+      <div id="manualRow" class="row" hidden>
+        <label for="manualProduct">제품 직접 선택</label>
+        <select id="manualProduct"></select>
+        <button id="manual" type="button">직접 선택</button>
+      </div>
+    </section>
+  </div>
+
+  <section class="card">
+    <h2>사용 방법</h2>
+    <ol>
+      <li>타깃을 준비합니다. PC에서 <a href="product-demo.html?ar=1">타깃 화면</a>을 열거나 아래 타깃 이미지를 다른 화면에 띄웁니다.</li>
+      <li>[카메라 시작]을 누르고 권한을 허용한 뒤, 타깃 전체가 보이고 화면의 1/3 이상 차지하도록 비춥니다.</li>
+      <li>알맞은 후보가 보이면 [후보가 맞아요]를 누르고 증상을 확인합니다.</li>
+      <li>[Overlay 안내 시작]을 누르면 노란 영역이 조작할 위치를 알려 줍니다. 표시를 직접 확인한 뒤 [확인함]을 누르세요.</li>
+    </ol>
+    <p class="note">정면에서 밝게 비추고, 반사·흔들림·PC 화면의 가는 줄무늬(모아레)를 피하면 더 잘 찾습니다.
+      타깃을 가리거나 치우면 Overlay가 바로 사라집니다.</p>
+  </section>
+
+  <section class="card" id="targets">
+    <h2>타깃 이미지</h2>
+    <p class="note">PC에서는 <a href="product-demo.html?ar=1">타깃 화면</a>이 표시 상태를 바꿀 수 있어 단계 실습에 알맞습니다.
+      이미지를 인쇄하거나 다른 화면에 띄우면 Overlay 위치만 확인할 수 있고 표시 상태는 바뀌지 않습니다.</p>
+    <details>
+      <summary>타깃 이미지 4종 보기</summary>
+      <ul class="targets">
+        <li><figure><a href="scenarios/aircon.png"><img src="scenarios/aircon.png" alt="합성 에어컨 패널 타깃" width="400" height="640" loading="lazy"></a><figcaption>에어컨</figcaption></figure></li>
+        <li><figure><a href="scenarios/washer.png"><img src="scenarios/washer.png" alt="합성 세탁기 패널 타깃" width="400" height="640" loading="lazy"></a><figcaption>세탁기</figcaption></figure></li>
+        <li><figure><a href="scenarios/refrigerator.png"><img src="scenarios/refrigerator.png" alt="합성 냉장고 패널 타깃" width="400" height="640" loading="lazy"></a><figcaption>냉장고</figcaption></figure></li>
+        <li><figure><a href="scenarios/monitor.png"><img src="scenarios/monitor.png" alt="합성 모니터 패널 타깃" width="400" height="640" loading="lazy"></a><figcaption>모니터</figcaption></figure></li>
+      </ul>
+    </details>
+  </section>
+
+  <details class="card">
+    <summary>한계와 확인 범위</summary>
+    <ul>
+      <li>합성 타깃 4종만 인식합니다. 삼성 실제 제품은 인식하지 않으며 제품 사진도 포함하지 않습니다.</li>
+      <li>학습한 AI 모델이 아니라 특징점 매칭으로 등록 이미지를 찾습니다. 처리는 이 브라우저 안에서만 합니다.</li>
+      <li>Overlay는 마지막으로 분석한 프레임을 따라가므로 기기 속도에 따라 움직임보다 늦을 수 있습니다.</li>
+      <li>인식 가능 범위는 합성 영상으로만 측정했습니다. 실제 휴대폰에서의 정확도는 측정하지 않았습니다.</li>
+      <li>단계 완료는 사용자가 직접 누릅니다. 앱이 화면 상태나 실제 고장 해결 여부를 판정하지 않습니다.</li>
+      <li>HTTPS 주소와 카메라 권한이 필요합니다. iOS Safari와 Galaxy 실기기 동작은 아직 확인하지 못했습니다.</li>
+    </ul>
+  </details>
+
+  <p class="note"><a href="photo-demo.html">사진 참조 데모</a> · <a href="product-demo.html">PC 타깃 화면</a> ·
+    <a href="https://github.com/daeungo1/visual-product-recognition#readme">README</a></p>
+</main>
+<script type="module" src="ar/app.js"></script>
+</body>
+</html>

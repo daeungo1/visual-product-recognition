@@ -4,6 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>제품 이슈 해결 Overlay · 합성 DEMO</title>
+  <script>
+    if (new URLSearchParams(location.search).get("ar") === "1") {
+      document.documentElement.className = "ar";
+      document.title = "카메라 AR용 합성 타깃 · DEMO";
+    }
+  </script>
   <style>
     * { box-sizing: border-box; }
     body { margin: 0; padding: 20px; background: #e7edf3; color: #102030; font-family: system-ui, sans-serif; }
@@ -26,23 +32,41 @@
     #error, #message { color: #a40000; }
     #progress { font-weight: bold; }
     [hidden] { display: none !important; }
+    .ar-only { display: none; }
+    html.ar .full-only { display: none; }
+    html.ar .ar-only { display: inline-block; }
+    html.ar body { padding: 8px; }
+    html.ar .layout { display: block; }
+    html.ar .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: 0 0 4px; font-size: 0.9rem; }
+    html.ar .bar button, html.ar .bar select { margin: 0; padding: 6px 10px; }
+    html.ar #product-title { margin: 4px 0; font-size: 1rem; text-align: center; }
+    html.ar #target { width: min(100%, calc((100vh - 120px) * 0.625)); margin: 4px auto; }
+    @supports (height: 100svh) { html.ar #target { width: min(100%, calc((100svh - 120px) * 0.625)); } }
     @media (max-width: 720px) { .layout { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
   <header>
-    <h1>카메라 → 제품 확인 → 증상 → 해결 안내 Overlay</h1>
-    <p class="notice">DEMO 전용 가상 제품 패널입니다. 삼성 제품 사진·공식 조작 절차·고장 진단이 아닙니다.
-      아래 웹 화면은 PC 타깃과 Overlay 동작 미리보기이며 실제 카메라 식별·추적을 수행하지 않습니다.</p>
-    <p><a href="photo-demo.html">설치 없는 모바일 사진·카메라 한 장 DEMO</a>
+    <h1 class="full-only">카메라 → 제품 확인 → 증상 → 해결 안내 Overlay</h1>
+    <p class="notice full-only">DEMO 전용 가상 제품 패널입니다. 삼성 제품 사진·공식 조작 절차·고장 진단이 아닙니다.
+      이 PC 화면은 타깃과 Overlay 위치 미리보기이며 카메라 식별·추적은 하지 않습니다.
+      폰에서 <a href="ar-demo.html">카메라 AR Overlay 데모</a>를 열어 이 타깃을 비추면 Overlay가 카메라 영상 속 타깃 위에 겹쳐 표시됩니다.</p>
+    <p class="full-only"><a href="ar-demo.html">카메라 AR Overlay 데모 (설치 없는 모바일 웹)</a>
+      · <a href="product-demo.html?ar=1">카메라 AR용 큰 타깃 화면</a>
+      · <a href="photo-demo.html">사진·카메라 한 장 DEMO</a>
       · <a href="https://github.com/daeungo1/visual-product-recognition/releases/download/v0.2.0-photo-demo/app-android-debug.apk">Galaxy 0.2 테스트 APK 설치</a>
       · <a href="https://github.com/daeungo1/visual-product-recognition#readme">설치·검증 범위</a>
       · <a href="demo-target.html">기존 리모컨 타깃</a>
       · <a href="https://www.samsung.com/sec/support/">실제 삼성 제품 공식 지원</a></p>
-    <p>Galaxy 앱의 ‘카메라로 제품 이슈 DEMO’에서 아래 타깃 전체를 비추고 제품을 확인하세요.
+    <p class="full-only">Galaxy 앱의 ‘카메라로 제품 이슈 DEMO’에서 아래 타깃 전체를 비추고 제품을 확인하세요.
       앱은 현재 FULL_TRACKING 중인 등록 타깃에만 안내를 표시합니다.</p>
-    <label for="product">PC에 표시할 합성 제품</label>
-    <select id="product" disabled><option>카탈로그 읽는 중</option></select>
+    <div class="bar">
+      <label for="product">PC에 표시할 합성 제품</label>
+      <select id="product" disabled><option>카탈로그 읽는 중</option></select>
+      <button id="ar-reset" class="ar-only" type="button" disabled>표시 초기화</button>
+      <a class="ar-only" href="ar-demo.html">카메라 AR 데모</a>
+      <a class="ar-only" href="product-demo.html">전체 보기</a>
+    </div>
     <p id="error" role="alert" hidden></p>
   </header>
   <main class="layout">
@@ -55,7 +79,7 @@
         <div id="highlight" hidden></div>
       </div>
     </section>
-    <section aria-label="증상별 Overlay 미리보기">
+    <section class="full-only" aria-label="증상별 Overlay 미리보기">
       <div class="card">
         <h2 id="issue">증상 확인</h2>
         <p id="summary"></p>
@@ -75,6 +99,7 @@
   <script>
     "use strict";
     const byId = id => document.getElementById(id);
+    const arMode = document.documentElement.classList.contains("ar");
     let catalog = [], active = null, values = [], step = 0, tracked = true, imageReady = false;
     const place = (element, rect) => {
       element.style.left = `${rect[0] * 100}%`;
@@ -87,7 +112,8 @@
       byId("confirm").disabled = !available || !tracked || step >= active.controls.length;
       byId("tracking").disabled = !available;
       byId("reset").disabled = active === null;
-      byId("highlight").hidden = !available || !tracked || step >= active.controls.length;
+      byId("ar-reset").disabled = active === null;
+      byId("highlight").hidden = arMode || !available || !tracked || step >= active.controls.length;
       byId("tracking").textContent = tracked ? "추적 상실 시뮬레이션" : "재탐지 시뮬레이션";
       if (!active) return;
       byId("display").textContent = values.join("\n");
@@ -154,7 +180,7 @@
       byId("message").textContent = tracked ? "재탐지 시뮬레이션: 현재 단계 안내만 다시 표시합니다." : "추적 없음: Overlay와 단계 확인을 중지했습니다.";
       render();
     };
-    byId("reset").onclick = () => { if (active) selectProduct(active.id); };
+    byId("reset").onclick = byId("ar-reset").onclick = () => { if (active) selectProduct(active.id); };
     byId("product").onchange = event => selectProduct(event.target.value);
     fetch("scenarios/catalog.json").then(response => {
       if (!response.ok) throw new Error(`카탈로그 HTTP ${response.status}`);
@@ -170,9 +196,11 @@
         option.value = scenario.id; option.textContent = `합성 ${scenario.product}`;
         byId("product").append(option);
       });
-      const unknown = document.createElement("option");
-      unknown.value = "unknown"; unknown.textContent = "미등록 실제품 (안내 차단)";
-      byId("product").append(unknown);
+      if (!arMode) {
+        const unknown = document.createElement("option");
+        unknown.value = "unknown"; unknown.textContent = "미등록 실제품 (안내 차단)";
+        byId("product").append(unknown);
+      }
       byId("product").disabled = false;
       selectProduct(catalog[0].id);
     }).catch(error => {
