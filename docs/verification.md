@@ -25,6 +25,7 @@ Static Web Apps Free에 게시했다. 기존 API·Cosmos·Blob·네트워크는 
 | Python·Ruff | API·평가·게시 테스트107개 통과, Ruff 전체 통과, 기존 외부 의존성 경고1개 |
 | core·Android | 테스트8개·25개, 실패·오류·건너뜀0; 변경 없는 테스트는 up-to-date 결과 재사용 |
 | APK·lint | 로컬 APK 재패키징 및 lint 성공, 4분2초, 오류0·기존 권고 경고9개 |
+| 공개 CI | [main Windows 검증](https://github.com/daeungo1/visual-product-recognition/actions/runs/40440367264) 성공, API·core·Android·APK·lint |
 | 미실시 | 에뮬레이터 실행·물리 Galaxy 설치/터치/촬영/선택기·실제품 사진 인식/실물 정합 |
 
 브라우저 합계75개는 DOM 활성화와 입력 이벤트 검사이며 물리 터치 검증이 아니다.
