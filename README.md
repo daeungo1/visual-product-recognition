@@ -20,6 +20,7 @@ PC 또는 두 번째 화면에 아래 둘째 줄의 타깃을 띄우고, 폰에�
 | 기존 0.1 공개본 | [합성 Mock-up Release](https://github.com/daeungo1/visual-product-recognition/releases/tag/v0.1.0-mockup) |
 | PC 제품별 시나리오·타깃 | [에어컨·세탁기·냉장고·모니터 Overlay 목업](https://daeungo1.github.io/visual-product-recognition/) |
 | 웹 소스 | [카메라 AR HTML](./assets/ar-demo.html), [AR 추적 모듈](./assets/ar/), [모바일 사진 참조 HTML](./assets/photo-demo.html), [공유 모델 출처](./assets/products/catalog.json) |
+| Foundry 모델 영역 제안 (PC 로컬 시험) | [gpt-6.1-terra 영역 제안 DEMO](#foundry-영역-제안-로컬-시험) |
 | 설치·페어링·시험 순서 | [Galaxy 테스트 안내](./docs/galaxy-test.md) |
 | HTTPS API | [liveness](https://ca-svg-dev-4ca0.whiterock-2d71d661.japaneast.azurecontainerapps.io/healthz), [readiness](https://ca-svg-dev-4ca0.whiterock-2d71d661.japaneast.azurecontainerapps.io/readyz) |
 | 공개 소스 | [daeungo1/visual-product-recognition](https://github.com/daeungo1/visual-product-recognition) |
@@ -41,6 +42,28 @@ Android 25개를 통과했고 Android lint는 오류 0개, 경고 5개다.
 폰 카메라의 인식 거리·속도, Galaxy 설치, 에뮬레이터, 실제품, 터치 시험은 미실시다.
 이전 배포의 사진 참조 공개 웹 DOM 검사 75개와 0.1 공개 웹 검사 37개는 이전 결과이며
 [검증 기록](./docs/verification.md)에 분리했다.
+
+### Foundry 영역 제안 로컬 시험
+
+Azure Foundry의 `gpt-6-1-terra`(리소스 `brk445demo-01`, GlobalStandard 용량 100)가 사진에서 부품별 점·박스 초안을 제안한다.
+인증 없는 API를 공개하지 않으므로 공개 웹·APK에는 연결하지 않았고, 개발자 PC에서만 127.0.0.1로 실행한다.
+폰 접속은 제공하지 않는다. 제안은 사람 검수 전 초안이며 Overlay 표시에 쓰지 않는다.
+
+```powershell
+az login
+cd server
+$env:PYTHONPATH = "src"
+$env:FOUNDRY_ENDPOINT = "https://brk445demo-01.cognitiveservices.azure.com/"
+.\.venv\Scripts\python.exe -m guide_api.region_demo
+```
+
+브라우저에서 `http://127.0.0.1:8890/`을 열고 합성 시나리오 이미지
+(예: [에어컨](./assets/scenarios/aircon.png), [모니터](./assets/scenarios/monitor.png))와 부품 이름을 넣으면
+노란 박스와 빨간 점이 겹쳐 보인다. 모델 배포는 `FOUNDRY_DEPLOYMENT`로 바꿀 수 있다.
+
+확인한 것: 합성 에어컨·모니터 이미지로 API 호출 2건이 성공했고 부품 2개씩 초안 영역을 받았다(PC 호출, 합성 이미지).
+서버 테스트 113개와 ruff를 통과했다. 정확도 측정, 브라우저 화면 확인, 폰, 실제 삼성 제품은 미실시다.
+SAM2·Grounded-SAM은 아직 배포하지 않았다. 자세한 내용은 [설계 노트](./docs/guide-fit-consensus.md)에 있다.
 
 ### 폰 브라우저에서 카메라 AR Overlay 시험
 
