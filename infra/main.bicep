@@ -1,238 +1,85 @@
 targetScope = 'subscription'
 
-metadata name = 'Samsung Visual Guide PoC infrastructure'
-metadata description = 'Creates the backing Azure resources for the CPU-based visual guide API.'
-
-/* Deployment identity and session metadata */
-
-@description('The deployment environment name.')
-@minLength(1)
-@maxLength(64)
+@description('AZD environment name.')
+@minLength(3)
+@maxLength(20)
 param environmentName string
 
-@description('The Azure region for all regional resources.')
-@minLength(1)
+@description('Primary Azure location.')
 param location string
 
-@description('The AppOnboard session identifier.')
-param sessionId string
+@description('Bearer token required by protected API routes.')
+@secure()
+param apiBearerToken string
 
-@description('The display name of the deployment principal.')
-param deployedBy string
+@description('Access code exchanged for a secure mobile demo session cookie.')
+@secure()
+param demoAccessCode string
 
-@description('The ISO 8601 timestamp for this scaffold.')
-param createdAt string
+@description('Dedicated signing secret for expiring demo session cookies.')
+@secure()
+param demoSessionSecret string
 
-@description('The object ID of the user running the deployment.')
-param deployerObjectId string
+@description('Existing Microsoft Foundry account name.')
+param foundryResourceName string = 'brk445demo-01'
 
-/* Application phase switch */
+@description('Resource group containing the existing Foundry account.')
+param foundryResourceGroupName string = 'rg-brk445demo'
 
-@description('Deploy the real Container App only when an actual ACR image is supplied.')
-param shouldDeployApplication bool = false
+@description('Existing GPT deployment name.')
+param foundryDeploymentName string = 'gpt-6-1-terra'
 
-@description('The fully qualified ACR image for phase 2. Leave null for phase 1.')
-param containerImage string?
-
-@description('The GlobalStandard capacity for the verification model deployment.')
-param verifyModelCapacity int = 10
-
+var resourceGroupName = 'rg-${environmentName}'
 var tags = {
-  'app-onboard-skill': 'true'
-  'app-onboard-session-id': sessionId
-  'created-at': createdAt
+  'azd-env-name': environmentName
+  application: 'visual-product-guide'
   environment: environmentName
-  'deployed-by': deployedBy
 }
 
-resource rg 'Microsoft.Resources/resourceGroups@2023-07-01' = {
-  name: 'rg-${environmentName}'
+resource rg 'Microsoft.Resources/resourceGroups@2024-11-01' = {
+  name: resourceGroupName
   location: location
-  tags: tags
+  tags: {
+    'azd-env-name': environmentName
+  }
 }
 
-module identity './modules/managed-identity.bicep' = {
-  name: 'managed-identity'
+module resources './modules/resources.bicep' = {
   scope: rg
   params: {
-    identityName: 'id-svg-dev-4ca0'
+    environmentName: environmentName
     location: location
     tags: tags
+    apiBearerToken: apiBearerToken
+    demoAccessCode: demoAccessCode
+    demoSessionSecret: demoSessionSecret
+    foundryDeploymentName: foundryDeploymentName
+    foundryEndpoint: 'https://${foundryResourceName}.cognitiveservices.azure.com/'
   }
 }
 
-module logAnalytics './modules/log-analytics.bicep' = {
-  name: 'log-analytics'
-  scope: rg
+module foundryRole './modules/foundry-role.bicep' = {
+  scope: resourceGroup(foundryResourceGroupName)
   params: {
-    workspaceName: 'log-svg-dev-4ca0'
-    location: location
-    tags: tags
+    foundryResourceName: foundryResourceName
+    principalId: resources.outputs.identityPrincipalId
   }
 }
 
-module storage './modules/storage.bicep' = {
-  name: 'storage'
-  scope: rg
-  params: {
-    storageAccountName: 'stsvgdev4ca0'
-    location: location
-    tags: tags
-  }
-}
+@description('Resource group identifier.')
+output RESOURCE_GROUP_ID string = rg.id
 
-module registry './modules/container-registry.bicep' = {
-  name: 'container-registry'
-  scope: rg
-  params: {
-    registryName: 'crsvgdev4ca0'
-    location: location
-    tags: tags
-  }
-}
+@description('Resource group name.')
+output AZURE_RESOURCE_GROUP string = rg.name
 
-module foundry './modules/foundry.bicep' = {
-  name: 'foundry'
-  scope: rg
-  params: {
-    accountName: 'ai-svg-dev-4ca0'
-    location: location
-    tags: tags
-    verifyModelCapacity: verifyModelCapacity
-  }
-}
+@description('Container registry login server.')
+output AZURE_CONTAINER_REGISTRY_ENDPOINT string = resources.outputs.containerRegistryEndpoint
 
-module search './modules/search.bicep' = {
-  name: 'search'
-  scope: rg
-  params: {
-    searchName: 'srch-svg-dev-4ca0'
-    location: location
-    tags: tags
-  }
-}
+@description('Public API URL.')
+output API_URL string = resources.outputs.apiUrl
 
-module cosmos './modules/cosmos.bicep' = {
-  name: 'cosmos'
-  scope: rg
-  params: {
-    accountName: 'cosmos-svg-dev-4ca0'
-    databaseName: 'visualguide'
-    deployerObjectId: deployerObjectId
-    identityName: identity.outputs.name
-    location: location
-    tags: tags
-  }
-  dependsOn: [
-    identity
-  ]
-}
+@description('User-assigned managed identity client ID.')
+output AZURE_CLIENT_ID string = resources.outputs.identityClientId
 
-module appInsights './modules/application-insights.bicep' = {
-  name: 'application-insights'
-  scope: rg
-  params: {
-    componentName: 'appi-svg-dev-4ca0'
-    location: location
-    tags: tags
-    workspaceName: logAnalytics.outputs.name
-  }
-  dependsOn: [
-    logAnalytics
-  ]
-}
-
-module managedEnvironment './modules/container-app-environment.bicep' = {
-  name: 'container-app-environment'
-  scope: rg
-  params: {
-    environmentName: 'cae-svg-dev-4ca0'
-    location: location
-    tags: tags
-    workspaceName: logAnalytics.outputs.name
-  }
-  dependsOn: [
-    logAnalytics
-  ]
-}
-
-module roleAssignments './modules/role-assignments.bicep' = {
-  name: 'role-assignments'
-  scope: rg
-  params: {
-    acrName: registry.outputs.name
-    deployerObjectId: deployerObjectId
-    foundryName: foundry.outputs.name
-    identityName: identity.outputs.name
-    searchName: search.outputs.name
-    storageAccountName: storage.outputs.name
-  }
-  dependsOn: [
-    identity
-    registry
-    storage
-    search
-    foundry
-  ]
-}
-
-module containerApp './modules/container-app.bicep' = {
-  name: 'container-app'
-  scope: rg
-  params: {
-    appInsightsConnectionString: appInsights.outputs.connectionString
-    appName: 'ca-svg-dev-4ca0'
-    containerImage: containerImage
-    cosmosEndpoint: cosmos.outputs.endpoint
-    environmentName: managedEnvironment.outputs.name
-    foundryEndpoint: foundry.outputs.endpoint
-    identityName: identity.outputs.name
-    location: location
-    registryName: registry.outputs.name
-    searchEndpoint: search.outputs.endpoint
-    shouldDeployApplication: shouldDeployApplication
-    storageAccountUrl: storage.outputs.accountUrl
-    tags: tags
-  }
-  dependsOn: [
-    managedEnvironment
-    roleAssignments
-    appInsights
-    cosmos
-  ]
-}
-
-/* Handoff outputs */
-
-@description('The resource group created by this deployment.')
-output resourceGroupName string = rg.name
-
-@description('The managed Container Apps environment resource ID.')
-output managedEnvironmentId string = managedEnvironment.outputs.id
-
-@description('The Container Registry login server.')
-output registryLoginServer string = registry.outputs.loginServer
-
-@description('The user-assigned managed identity client ID.')
-output uamiClientId string = identity.outputs.clientId
-
-@description('The user-assigned managed identity principal ID.')
-output uamiPrincipalId string = identity.outputs.principalId
-
-@description('The Cosmos DB endpoint.')
-output cosmosEndpoint string = cosmos.outputs.endpoint
-
-@description('The Blob Storage account URL.')
-output storageAccountUrl string = storage.outputs.accountUrl
-
-@description('The AI Search endpoint.')
-output searchEndpoint string = search.outputs.endpoint
-
-@description('The Microsoft Foundry endpoint.')
-output foundryEndpoint string = foundry.outputs.endpoint
-
-@description('The Application Insights connection string.')
-output applicationInsightsConnectionString string = appInsights.outputs.connectionString
-
-@description('The deployed API URL, or null until phase 2 deploys the real image.')
-output apiUrl string? = shouldDeployApplication && !empty(containerImage) ? containerApp.outputs.apiUrl : null
+@description('Log Analytics workspace resource ID.')
+output AZURE_LOG_ANALYTICS_WORKSPACE_ID string = resources.outputs.logAnalyticsWorkspaceId

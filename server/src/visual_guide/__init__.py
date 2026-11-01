@@ -1,0 +1,1 @@
+"""Visual product guide API."""

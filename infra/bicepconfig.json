@@ -1,5 +1,22 @@
 {
-  "formatting": {
-    "newlineKind": "LF"
+  "analyzers": {
+    "core": {
+      "enabled": true,
+      "verbose": true,
+      "rules": {
+        "no-hardcoded-env-urls": {
+          "level": "warning"
+        },
+        "no-unused-params": {
+          "level": "error"
+        },
+        "no-unused-vars": {
+          "level": "error"
+        },
+        "use-secure-value-for-secure-inputs": {
+          "level": "error"
+        }
+      }
+    }
   }
 }

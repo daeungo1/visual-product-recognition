@@ -1,0 +1,26 @@
+[
+  {
+    "case_id": "aircon-ar07b9350hzs",
+    "image": "img_AR07B9350HZS_L1.jpg",
+    "product_hint": "AR07B9350HZS",
+    "step_id": "locate-filter-access",
+    "component": "upper air inlet and filter access cover",
+    "instruction": "Visual grounding experiment only. Locate the external cover or inlet that provides access to the air filter. Do not claim a replacement procedure."
+  },
+  {
+    "case_id": "washer-dark-unknown",
+    "image": "image_model_samsung2.png",
+    "product_hint": null,
+    "step_id": "locate-service-cover",
+    "component": "lower front service or filter cover",
+    "instruction": "Visual grounding experiment only. Locate a visible lower front service or filter cover. Return not_visible or uncertain when it cannot be distinguished."
+  },
+  {
+    "case_id": "washer-white-unknown",
+    "image": "images_model_samsung.jfif",
+    "product_hint": null,
+    "step_id": "locate-service-cover",
+    "component": "lower front service or filter cover",
+    "instruction": "Visual grounding experiment only. Locate a visible lower front service or filter cover. Return not_visible or uncertain when it cannot be distinguished."
+  }
+]
