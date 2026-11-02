@@ -1,5 +1,6 @@
 """Registry-gated multi-target grounding with one bounded crop retry."""
 
+from dataclasses import dataclass
 from pathlib import Path
 
 from openai import OpenAIError
@@ -26,16 +27,20 @@ RETAKE_INSTRUCTIONS = {
 MODEL_PROPOSAL_ERRORS = (OpenAIError, ValueError, TimeoutError, ConnectionError)
 
 
-class GuideGroundingService:
-    """Ground reviewed targets independently with bounded model calls."""
+@dataclass(frozen=True)
+class TargetGroundingContext:
+    """Prompt context for one target without product authority."""
 
-    def __init__(self, *, registry, gateway, manual_paths: dict[str, Path]):
-        self.registry = registry
+    step_id: str
+    instruction: str
+    source_evidence: str
+
+
+class TargetGrounder:
+    """Ground one reviewed or zero-shot component with bounded retries."""
+
+    def __init__(self, gateway):
         self.gateway = gateway
-        self.manual_paths = {
-            model_code.strip().upper(): path
-            for model_code, path in manual_paths.items()
-        }
 
     def _proposals(
         self,
@@ -85,6 +90,76 @@ class GuideGroundingService:
 
     def ground(
         self,
+        *,
+        target_id: str,
+        component,
+        step,
+        image: ImageInput,
+    ) -> GroundedTarget:
+        """Ground one target and convert provider failures to uncertainty."""
+        try:
+            decision = aggregate_regions(
+                self._proposals(
+                    step=step,
+                    component=component,
+                    image=image,
+                    crop_retry=False,
+                )
+            )
+        except MODEL_PROPOSAL_ERRORS as error:
+            decision = RegionProposal(
+                status=RegionStatus.UNCERTAIN,
+                step_id=step.step_id,
+                component=component.canonical_name,
+                image_width=image.width,
+                image_height=image.height,
+                point=None,
+                box=None,
+                evidence=f"Model proposal failed: {type(error).__name__}.",
+            )
+            return self._target(
+                target_id=target_id,
+                component=component,
+                decision=decision,
+                attempts=1,
+            )
+        attempts = 1
+        if decision.status is RegionStatus.UNCERTAIN:
+            cropped = crop_image(image, component)
+            try:
+                crop_decision = aggregate_regions(
+                    self._proposals(
+                        step=step,
+                        component=component,
+                        image=cropped.image,
+                        crop_retry=True,
+                    )
+                )
+                decision = remap_proposal(crop_decision, cropped)
+            except MODEL_PROPOSAL_ERRORS:
+                pass
+            attempts = 2
+        return self._target(
+            target_id=target_id,
+            component=component,
+            decision=decision,
+            attempts=attempts,
+        )
+
+
+class GuideGroundingService:
+    """Ground reviewed targets independently with bounded model calls."""
+
+    def __init__(self, *, registry, gateway, manual_paths: dict[str, Path]):
+        self.registry = registry
+        self.target_grounder = TargetGrounder(gateway)
+        self.manual_paths = {
+            model_code.strip().upper(): path
+            for model_code, path in manual_paths.items()
+        }
+
+    def ground(
+        self,
         request: MultiTargetRegionRequest,
         image: ImageInput,
     ) -> MultiTargetRegionResponse:
@@ -116,57 +191,16 @@ class GuideGroundingService:
         grounded: list[GroundedTarget] = []
         for target_id in request.target_ids:
             component = resolved.components[target_id]
-            try:
-                decision = aggregate_regions(
-                    self._proposals(
-                        step=step,
-                        component=component,
-                        image=image,
-                        crop_retry=False,
-                    )
-                )
-            except MODEL_PROPOSAL_ERRORS as error:
-                decision = RegionProposal(
-                    status=RegionStatus.UNCERTAIN,
-                    step_id=step.step_id,
-                    component=component.canonical_name,
-                    image_width=image.width,
-                    image_height=image.height,
-                    point=None,
-                    box=None,
-                    evidence=f"Model proposal failed: {type(error).__name__}.",
-                )
-                grounded.append(
-                    self._target(
-                        target_id=target_id,
-                        component=component,
-                        decision=decision,
-                        attempts=1,
-                    )
-                )
-                continue
-            attempts = 1
-            if decision.status is RegionStatus.UNCERTAIN:
-                cropped = crop_image(image, component)
-                try:
-                    crop_decision = aggregate_regions(
-                        self._proposals(
-                            step=step,
-                            component=component,
-                            image=cropped.image,
-                            crop_retry=True,
-                        )
-                    )
-                    decision = remap_proposal(crop_decision, cropped)
-                except MODEL_PROPOSAL_ERRORS:
-                    pass
-                attempts = 2
             grounded.append(
-                self._target(
+                self.target_grounder.ground(
                     target_id=target_id,
                     component=component,
-                    decision=decision,
-                    attempts=attempts,
+                    step=TargetGroundingContext(
+                        step_id=step.step_id,
+                        instruction=step.instruction,
+                        source_evidence=step.source_evidence,
+                    ),
+                    image=image,
                 )
             )
         located = sum(target.status is RegionStatus.LOCATED for target in grounded)

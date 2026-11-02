@@ -248,6 +248,24 @@ class ReviewedRegistry:
             raise LookupError(f"Unknown manual: {manual_id}")
         return manual
 
+    def guide(self, product_id: str, guide_id: str) -> ReviewedGuide:
+        """Return one reviewed guide by stable product and guide IDs."""
+        guide = self._guides.get((product_id, guide_id))
+        if guide is None:
+            raise LookupError(f"Unknown guide: {guide_id}")
+        return guide
+
+    def component_by_id(
+        self,
+        product_id: str,
+        component_id: str,
+    ) -> ComponentSpec:
+        """Return one reviewed component inside a selected product."""
+        component = self._components.get(product_id, {}).get(component_id)
+        if component is None:
+            raise LookupError(f"Unknown component: {component_id}")
+        return component
+
     def product_summaries(self) -> tuple[dict, ...]:
         """Return bounded reviewed metadata for issue planning."""
         return tuple(

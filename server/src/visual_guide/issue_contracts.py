@@ -167,6 +167,8 @@ class IssueGroundingRequest(StrictModel):
     resolution: IssueResolution
     confirmed_product_id: str | None = Field(default=None, max_length=128)
     confirmed_model_code: str | None = Field(default=None, max_length=128)
+    confirmed_guide_id: str | None = Field(default=None, max_length=128)
+    confirmed_step_id: str | None = Field(default=None, max_length=128)
     confirmed_targets: tuple[DynamicTargetSpec, ...] = Field(
         min_length=1,
         max_length=3,
