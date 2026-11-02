@@ -2,6 +2,12 @@
   "product_id": "samsung-wd80h25bhs",
   "manufacturer": "Samsung",
   "display_name": "Bespoke AI Combo 25/18kg (71.1mm LCD + dial), Dark Steel",
+  "product_family": "washer_dryer_combo",
+  "aliases": [
+    "Bespoke AI Combo",
+    "비스포크 AI 콤보",
+    "삼성 세탁건조기"
+  ],
   "exact_model_codes": [
     "WD80H25BHS"
   ],
@@ -13,6 +19,7 @@
       "sha256": "95E72378FAF9E9540D5FC047B8C76CB92C2E908AC0E5538B97A29A50054A1AC5",
       "language": "ko-KR",
       "revision": "2026-09-16",
+      "asset_name": "WD80H25BHS_OID139796_KO.pdf",
       "applicable_models": [
         "WD80H25BHS"
       ],

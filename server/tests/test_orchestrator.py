@@ -35,6 +35,7 @@ def _resolved() -> ResolvedGuide:
         sha256="A" * 64,
         language="ko-KR",
         revision="2026-09-16",
+        asset_name="manual.pdf",
         applicable_models=("WD80H25BHS",),
         reviewed=True,
     )
@@ -43,6 +44,8 @@ def _resolved() -> ResolvedGuide:
             product_id="samsung-wd80h25bhs",
             manufacturer="Samsung",
             display_name="Bespoke AI Combo",
+            product_family="washer_dryer_combo",
+            aliases=("Bespoke AI Combo",),
             exact_model_codes=("WD80H25BHS",),
             reviewed=True,
             manuals=(manual,),

@@ -1,0 +1,43 @@
+[
+  {
+    "issue_intent": "detergent_loading",
+    "aliases": [
+      "세제 넣기",
+      "세제를 어디에 넣어",
+      "세제 투입구 찾기"
+    ],
+    "required_states": [
+      "front_visible"
+    ],
+    "guide_id": "detergent-and-controls",
+    "eligible_step_ids": [
+      "locate-detergent-and-controls",
+      "open-detergent-dispenser"
+    ],
+    "required_component_ids": [
+      "detergent_dispenser"
+    ],
+    "optional_component_ids": [
+      "control_panel"
+    ]
+  },
+  {
+    "issue_intent": "control_operation",
+    "aliases": [
+      "버튼 찾기",
+      "조작부 찾기",
+      "세탁 시작"
+    ],
+    "required_states": [
+      "front_visible"
+    ],
+    "guide_id": "detergent-and-controls",
+    "eligible_step_ids": [
+      "locate-detergent-and-controls"
+    ],
+    "required_component_ids": [
+      "control_panel"
+    ],
+    "optional_component_ids": []
+  }
+]

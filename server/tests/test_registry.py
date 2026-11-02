@@ -24,6 +24,8 @@ def _write_registry(
                 "product_id": "samsung-wd80h25bhs",
                 "manufacturer": "Samsung",
                 "display_name": "Bespoke AI Combo 25/18kg",
+                "product_family": "washer_dryer_combo",
+                "aliases": ["Bespoke AI Combo", "비스포크 AI 콤보"],
                 "exact_model_codes": ["WD80H25BHS"],
                 "reviewed": reviewed,
                 "manuals": [
@@ -33,6 +35,7 @@ def _write_registry(
                         "sha256": digest,
                         "language": "ko-KR",
                         "revision": "2026-09-16",
+                        "asset_name": "WD80H25BHS.pdf",
                         "applicable_models": ["WD80H25BHS"],
                         "reviewed": True,
                     }
@@ -81,6 +84,22 @@ def _write_registry(
                     }
                 ],
             }
+        ),
+        encoding="utf-8",
+    )
+    (product / "issues.json").write_text(
+        json.dumps(
+            [
+                {
+                    "issue_intent": "detergent_loading",
+                    "aliases": ["세제 넣기", "세제를 어디에 넣어"],
+                    "required_states": ["front_visible"],
+                    "guide_id": "detergent-and-controls",
+                    "eligible_step_ids": ["locate-detergent-and-controls"],
+                    "required_component_ids": ["detergent_dispenser"],
+                    "optional_component_ids": ["control_panel"],
+                }
+            ]
         ),
         encoding="utf-8",
     )
@@ -151,3 +170,70 @@ def test_registry_rejects_unknown_component(tmp_path: Path):
 
     with pytest.raises(ValueError, match="unknown component"):
         load_reviewed_registry(tmp_path)
+
+
+def test_registry_resolves_normalized_exact_model(tmp_path: Path):
+    _write_registry(tmp_path)
+    registry = load_reviewed_registry(tmp_path)
+
+    product = registry.resolve_exact_model(" wd80-h25bhs ")
+
+    assert product.product_id == "samsung-wd80h25bhs"
+
+
+def test_registry_searches_reviewed_product_aliases(tmp_path: Path):
+    _write_registry(tmp_path)
+    registry = load_reviewed_registry(tmp_path)
+
+    matches = registry.search_product_candidates("비스포크 ai 콤보")
+
+    assert [product.product_id for product in matches] == ["samsung-wd80h25bhs"]
+    assert registry.search_product_candidates("generic washer photo") == ()
+
+
+def test_registry_maps_issue_and_state_to_reviewed_guide(tmp_path: Path):
+    _write_registry(tmp_path)
+    registry = load_reviewed_registry(tmp_path)
+
+    matches = registry.find_guide_candidates(
+        product_id="samsung-wd80h25bhs",
+        issue_intent="detergent_loading",
+        current_state="front_visible",
+    )
+
+    assert [guide.guide_id for guide in matches] == ["detergent-and-controls"]
+    assert (
+        registry.find_guide_candidates(
+            product_id="samsung-wd80h25bhs",
+            issue_intent="detergent_loading",
+            current_state="door_open",
+        )
+        == ()
+    )
+
+
+def test_registry_resolves_component_alias_without_cross_product_leakage(
+    tmp_path: Path,
+):
+    _write_registry(tmp_path)
+    registry = load_reviewed_registry(tmp_path)
+
+    component = registry.resolve_component_alias(
+        "samsung-wd80h25bhs",
+        "세제 넣는 곳",
+    )
+
+    assert component.component_id == "detergent_dispenser"
+    assert registry.resolve_component_alias("samsung-wd80h25bhs", "먼지망") is None
+
+
+def test_registry_exposes_reviewed_manual_asset_metadata(tmp_path: Path):
+    _write_registry(tmp_path)
+    registry = load_reviewed_registry(tmp_path)
+
+    manual = registry.manual_asset(
+        "samsung-wd80h25bhs",
+        "wd80h25bhs-ko-20260916",
+    )
+
+    assert manual.asset_name == "WD80H25BHS.pdf"

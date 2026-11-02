@@ -1,6 +1,7 @@
 """Fail-closed reviewed product, manual and guide registry."""
 
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
@@ -20,6 +21,7 @@ class ManualReference(BaseModel):
     sha256: str = Field(pattern=r"^[A-F0-9]{64}$")
     language: str = Field(min_length=2, max_length=16)
     revision: str = Field(min_length=1, max_length=32)
+    asset_name: str = Field(min_length=1, max_length=256)
     applicable_models: tuple[str, ...] = Field(min_length=1)
     reviewed: bool
 
@@ -38,6 +40,8 @@ class ProductManifest(BaseModel):
     product_id: str = Field(min_length=1, max_length=128)
     manufacturer: str = Field(min_length=1, max_length=64)
     display_name: str = Field(min_length=1, max_length=256)
+    product_family: str = Field(min_length=1, max_length=128)
+    aliases: tuple[str, ...] = Field(min_length=1)
     exact_model_codes: tuple[str, ...] = Field(min_length=1)
     reviewed: bool
     manuals: tuple[ManualReference, ...] = Field(min_length=1)
@@ -104,6 +108,20 @@ class ReviewedGuide(BaseModel):
         return self
 
 
+class IssueMapping(BaseModel):
+    """Reviewed mapping from user intent and state to guide candidates."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    issue_intent: str = Field(min_length=1, max_length=128)
+    aliases: tuple[str, ...] = Field(min_length=1)
+    required_states: tuple[str, ...] = Field(min_length=1)
+    guide_id: str = Field(min_length=1, max_length=128)
+    eligible_step_ids: tuple[str, ...] = Field(min_length=1)
+    required_component_ids: tuple[str, ...] = Field(min_length=1)
+    optional_component_ids: tuple[str, ...] = ()
+
+
 @dataclass(frozen=True)
 class ResolvedGuide:
     """Applicable reviewed product, manual and guide."""
@@ -122,10 +140,113 @@ class ReviewedRegistry:
         products: dict[str, ProductManifest],
         components: dict[str, dict[str, ComponentSpec]],
         guides: dict[tuple[str, str], ReviewedGuide],
+        issue_mappings: dict[str, tuple[IssueMapping, ...]],
     ):
         self._products = products
         self._components = components
         self._guides = guides
+        self._issue_mappings = issue_mappings
+
+    @staticmethod
+    def _normalize(value: str) -> str:
+        return re.sub(r"[^\w]+", "", value.casefold())
+
+    def resolve_exact_model(self, model_code: str) -> ProductManifest:
+        """Resolve one exact normalized model without fuzzy fallback."""
+        normalized = self._normalize(model_code)
+        matches = [
+            product
+            for product in self._products.values()
+            if normalized
+            in {self._normalize(code) for code in product.exact_model_codes}
+        ]
+        if len(matches) != 1:
+            raise LookupError(f"Exact model is not supported: {model_code}")
+        return matches[0]
+
+    def search_product_candidates(
+        self,
+        product_hint: str,
+    ) -> tuple[ProductManifest, ...]:
+        """Search reviewed product names, families and aliases."""
+        normalized = self._normalize(product_hint)
+        if not normalized:
+            return ()
+        matches = []
+        for product in self._products.values():
+            values = (
+                product.manufacturer,
+                product.display_name,
+                product.product_family,
+                *product.aliases,
+            )
+            if any(
+                normalized in self._normalize(value)
+                or self._normalize(value) in normalized
+                for value in values
+            ):
+                matches.append(product)
+        return tuple(sorted(matches, key=lambda item: item.product_id))
+
+    def resolve_component_alias(
+        self,
+        product_id: str,
+        user_target: str,
+    ) -> ComponentSpec | None:
+        """Resolve an alias only inside the selected reviewed product."""
+        component_map = self._components.get(product_id)
+        if component_map is None:
+            raise LookupError(f"Unknown product: {product_id}")
+        normalized = self._normalize(user_target)
+        for component in component_map.values():
+            values = (component.canonical_name, *component.aliases)
+            if normalized in {self._normalize(value) for value in values}:
+                return component
+        return None
+
+    def find_guide_candidates(
+        self,
+        *,
+        product_id: str,
+        issue_intent: str,
+        current_state: str | None,
+    ) -> tuple[ReviewedGuide, ...]:
+        """Return only guides whose reviewed intent and state mapping matches."""
+        if product_id not in self._products:
+            raise LookupError(f"Unknown product: {product_id}")
+        normalized_intent = self._normalize(issue_intent)
+        normalized_state = self._normalize(current_state or "")
+        guide_ids = []
+        for mapping in self._issue_mappings.get(product_id, ()):
+            intents = (mapping.issue_intent, *mapping.aliases)
+            if normalized_intent not in {self._normalize(value) for value in intents}:
+                continue
+            states = {self._normalize(value) for value in mapping.required_states}
+            if not normalized_state or normalized_state not in states:
+                continue
+            guide_ids.append(mapping.guide_id)
+        return tuple(
+            self._guides[(product_id, guide_id)]
+            for guide_id in guide_ids
+            if (product_id, guide_id) in self._guides
+        )
+
+    def manual_asset(
+        self,
+        product_id: str,
+        manual_id: str,
+    ) -> ManualReference:
+        """Return reviewed manual metadata for a selected product."""
+        product = self._products.get(product_id)
+        if product is None:
+            raise LookupError(f"Unknown product: {product_id}")
+        manual = next(
+            (item for item in product.manuals if item.manual_id == manual_id),
+            None,
+        )
+        if manual is None:
+            raise LookupError(f"Unknown manual: {manual_id}")
+        return manual
 
     def resolve_guide(
         self,
@@ -135,14 +256,7 @@ class ReviewedRegistry:
         manual_path: Path,
     ) -> ResolvedGuide:
         normalized = model_code.strip().upper()
-        matches = [
-            product
-            for product in self._products.values()
-            if normalized in product.exact_model_codes
-        ]
-        if len(matches) != 1:
-            raise LookupError(f"Exact model is not supported: {model_code}")
-        product = matches[0]
+        product = self.resolve_exact_model(model_code)
         guide = self._guides.get((product.product_id, guide_id))
         if guide is None or normalized not in guide.exact_model_codes:
             raise LookupError(f"Guide is not applicable to model: {model_code}")
@@ -170,6 +284,7 @@ def load_reviewed_registry(root: Path) -> ReviewedRegistry:
     products: dict[str, ProductManifest] = {}
     components: dict[str, dict[str, ComponentSpec]] = {}
     guides: dict[tuple[str, str], ReviewedGuide] = {}
+    issue_mappings: dict[str, tuple[IssueMapping, ...]] = {}
     for manifest_path in sorted(root.glob("*/*/manifest.json")):
         product_dir = manifest_path.parent
         product = ProductManifest.model_validate_json(
@@ -203,8 +318,36 @@ def load_reviewed_registry(root: Path) -> ReviewedRegistry:
             if key in guides:
                 raise ValueError(f"Duplicate guide ID: {guide.guide_id}")
             guides[key] = guide
+        issues_path = product_dir / "issues.json"
+        mappings = (
+            tuple(
+                IssueMapping.model_validate(item)
+                for item in json.loads(issues_path.read_text(encoding="utf-8"))
+            )
+            if issues_path.is_file()
+            else ()
+        )
+        for mapping in mappings:
+            guide = guides.get((product.product_id, mapping.guide_id))
+            if guide is None:
+                raise ValueError("Issue mapping references an unknown guide.")
+            step_ids = {step.step_id for step in guide.steps}
+            if not set(mapping.eligible_step_ids).issubset(step_ids):
+                raise ValueError("Issue mapping references an unknown guide step.")
+            component_ids = set(component_map)
+            mapped_components = set(mapping.required_component_ids) | set(
+                mapping.optional_component_ids
+            )
+            if not mapped_components.issubset(component_ids):
+                raise ValueError("Issue mapping references an unknown component.")
         products[product.product_id] = product
         components[product.product_id] = component_map
+        issue_mappings[product.product_id] = mappings
     if not products:
         raise ValueError("No reviewed products found.")
-    return ReviewedRegistry(products=products, components=components, guides=guides)
+    return ReviewedRegistry(
+        products=products,
+        components=components,
+        guides=guides,
+        issue_mappings=issue_mappings,
+    )
