@@ -38,6 +38,7 @@ class RawPlannedIssue(StrictModel):
     """Provider output before deterministic target bounding."""
 
     issue_intent: str = Field(min_length=1, max_length=128)
+    normalized_state: str | None = Field(default=None, max_length=128)
     visual_category: str | None = Field(default=None, max_length=128)
     targets: tuple[PlannedTarget, ...] = Field(min_length=1, max_length=8)
     truncation_reason: str | None = Field(default=None, max_length=500)
@@ -47,6 +48,7 @@ class PlannedIssue(StrictModel):
     """Normalized bounded planner output."""
 
     issue_intent: str = Field(min_length=1, max_length=128)
+    normalized_state: str | None = Field(default=None, max_length=128)
     visual_category: str | None = Field(default=None, max_length=128)
     targets: tuple[PlannedTarget, ...] = Field(min_length=1, max_length=3)
     truncation_reason: str | None = Field(default=None, max_length=500)
@@ -68,6 +70,7 @@ def _bounded(raw: RawPlannedIssue) -> PlannedIssue:
         reason = f"{dropped} additional target(s) were omitted by the three-target limit."
     return PlannedIssue(
         issue_intent=raw.issue_intent,
+        normalized_state=raw.normalized_state,
         visual_category=raw.visual_category,
         targets=targets,
         truncation_reason=reason,

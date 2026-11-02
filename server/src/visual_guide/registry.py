@@ -248,6 +248,42 @@ class ReviewedRegistry:
             raise LookupError(f"Unknown manual: {manual_id}")
         return manual
 
+    def product_summaries(self) -> tuple[dict, ...]:
+        """Return bounded reviewed metadata for issue planning."""
+        return tuple(
+            {
+                "product_id": product.product_id,
+                "manufacturer": product.manufacturer,
+                "display_name": product.display_name,
+                "product_family": product.product_family,
+                "aliases": product.aliases,
+                "exact_model_codes": product.exact_model_codes,
+            }
+            for product in sorted(
+                self._products.values(),
+                key=lambda item: item.product_id,
+            )
+        )
+
+    def component_evidence(
+        self,
+        product_id: str,
+        component_id: str,
+    ) -> str:
+        """Return one reviewed source citation for a product component."""
+        if component_id not in self._components.get(product_id, {}):
+            raise LookupError(f"Unknown component: {component_id}")
+        for (guide_product_id, _), guide in sorted(self._guides.items()):
+            if guide_product_id != product_id:
+                continue
+            for step in guide.steps:
+                if component_id in step.target_ids:
+                    return (
+                        f"{step.source_manual_id}:page:{step.source_page}:"
+                        f"{step.source_evidence}"
+                    )
+        raise LookupError(f"No reviewed evidence for component: {component_id}")
+
     def resolve_guide(
         self,
         *,
