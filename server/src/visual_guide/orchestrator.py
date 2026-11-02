@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+from openai import OpenAIError
+
 from visual_guide.consensus import aggregate_regions
 from visual_guide.contracts import (
     GroundedTarget,
@@ -21,6 +23,7 @@ RETAKE_INSTRUCTIONS = {
     "lower_front": "제품 전면 하단 전체를 정면에서 가까이 촬영하세요.",
     "full_front": "제품 전면 전체가 잘리지 않도록 정면에서 다시 촬영하세요.",
 }
+MODEL_PROPOSAL_ERRORS = (OpenAIError, ValueError, TimeoutError, ConnectionError)
 
 
 class GuideGroundingService:
@@ -113,26 +116,50 @@ class GuideGroundingService:
         grounded: list[GroundedTarget] = []
         for target_id in request.target_ids:
             component = resolved.components[target_id]
-            decision = aggregate_regions(
-                self._proposals(
-                    step=step,
-                    component=component,
-                    image=image,
-                    crop_retry=False,
-                )
-            )
-            attempts = 1
-            if decision.status is not RegionStatus.LOCATED:
-                cropped = crop_image(image, component)
-                crop_decision = aggregate_regions(
+            try:
+                decision = aggregate_regions(
                     self._proposals(
                         step=step,
                         component=component,
-                        image=cropped.image,
-                        crop_retry=True,
+                        image=image,
+                        crop_retry=False,
                     )
                 )
-                decision = remap_proposal(crop_decision, cropped)
+            except MODEL_PROPOSAL_ERRORS as error:
+                decision = RegionProposal(
+                    status=RegionStatus.UNCERTAIN,
+                    step_id=step.step_id,
+                    component=component.canonical_name,
+                    image_width=image.width,
+                    image_height=image.height,
+                    point=None,
+                    box=None,
+                    evidence=f"Model proposal failed: {type(error).__name__}.",
+                )
+                grounded.append(
+                    self._target(
+                        target_id=target_id,
+                        component=component,
+                        decision=decision,
+                        attempts=1,
+                    )
+                )
+                continue
+            attempts = 1
+            if decision.status is RegionStatus.UNCERTAIN:
+                cropped = crop_image(image, component)
+                try:
+                    crop_decision = aggregate_regions(
+                        self._proposals(
+                            step=step,
+                            component=component,
+                            image=cropped.image,
+                            crop_retry=True,
+                        )
+                    )
+                    decision = remap_proposal(crop_decision, cropped)
+                except MODEL_PROPOSAL_ERRORS:
+                    pass
                 attempts = 2
             grounded.append(
                 self._target(

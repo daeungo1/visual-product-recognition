@@ -46,7 +46,9 @@ def test_reviewed_manual_is_staged_in_image_and_configured_for_runtime():
         encoding="utf-8"
     )
 
-    assert "COPY data ./data" in dockerfile
+    assert "COPY data ./data" not in dockerfile
+    assert "python -m visual_guide.manual_staging" in dockerfile
+    assert "WD80H25BHS_OID139796_KO.pdf" in dockerfile
     assert (
         "name: 'REVIEWED_MANUAL_PATH'\n"
         "            value: '/app/data/WD80H25BHS_OID139796_KO.pdf'"

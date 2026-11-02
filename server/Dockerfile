@@ -14,7 +14,9 @@ RUN pip install --no-cache-dir uv==0.9.27 \
     && uv sync --frozen --no-dev --no-install-project
 
 COPY src ./src
-COPY data ./data
+
+RUN PYTHONPATH=/app/src python -m visual_guide.manual_staging \
+    --destination /app/data/WD80H25BHS_OID139796_KO.pdf
 
 RUN uv sync --frozen --no-dev
 

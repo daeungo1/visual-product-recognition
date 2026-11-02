@@ -225,7 +225,7 @@ Validation run: 2026-11-02, Sweden Central, subscription
 
 | Check | Command or tool | Result |
 |---|---|---|
-| Python tests | Preserved Python 3.11 environment, `pytest` | PASS, 59 tests |
+| Python tests | Preserved Python 3.11 environment, `pytest` | PASS, 63 tests |
 | Python lint | `ruff check server eval` | PASS |
 | Bicep build | `az bicep build --file infra/main.bicep --stdout` | PASS |
 | ARM validation | Official `validate-deployment.ps1`, subscription scope | PASS |

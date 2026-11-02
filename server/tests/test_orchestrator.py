@@ -97,6 +97,8 @@ class QueueGateway:
     def propose(self, request, image):
         self.calls.append((request, image))
         status = self.statuses.pop(0)
+        if isinstance(status, Exception):
+            raise status
         if status is RegionStatus.LOCATED:
             return RegionProposal(
                 status=status,
@@ -195,3 +197,39 @@ def test_grounding_preserves_partial_success_and_target_retake_guidance():
     assert response.targets[1].status is RegionStatus.LOCATED
     assert response.partial_success is True
     assert len(gateway.calls) == 9
+
+
+def test_not_visible_consensus_is_not_retried():
+    gateway = QueueGateway([RegionStatus.NOT_VISIBLE] * 3)
+    service = GuideGroundingService(
+        registry=FakeRegistry(),
+        gateway=gateway,
+        manual_paths={"WD80H25BHS": Path("manual.pdf")},
+    )
+
+    response = service.ground(_request("detergent_dispenser"), _image())
+
+    target = response.targets[0]
+    assert target.status is RegionStatus.NOT_VISIBLE
+    assert target.attempts == 1
+    assert len(gateway.calls) == 3
+
+
+def test_failure_in_one_target_preserves_prior_target_success():
+    gateway = QueueGateway([RegionStatus.LOCATED] * 3 + [ValueError("bad response")])
+    service = GuideGroundingService(
+        registry=FakeRegistry(),
+        gateway=gateway,
+        manual_paths={"WD80H25BHS": Path("manual.pdf")},
+    )
+
+    response = service.ground(
+        _request("control_panel", "detergent_dispenser"),
+        _image(),
+    )
+
+    assert response.targets[0].status is RegionStatus.LOCATED
+    assert response.targets[1].status is RegionStatus.UNCERTAIN
+    assert response.targets[1].attempts == 1
+    assert response.partial_success is True
+    assert len(gateway.calls) == 4
