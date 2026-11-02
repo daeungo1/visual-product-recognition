@@ -37,3 +37,17 @@ def test_mobile_demo_access_code_is_injected_as_container_secret():
         "name: 'DEMO_SESSION_SECRET'\n            secretRef: 'demo-session-secret'"
         in source
     )
+
+
+def test_reviewed_manual_is_staged_in_image_and_configured_for_runtime():
+    root = Path(__file__).resolve().parents[2]
+    dockerfile = (root / "server" / "Dockerfile").read_text(encoding="utf-8")
+    bicep = (root / "infra" / "modules" / "resources.bicep").read_text(
+        encoding="utf-8"
+    )
+
+    assert "COPY data ./data" in dockerfile
+    assert (
+        "name: 'REVIEWED_MANUAL_PATH'\n"
+        "            value: '/app/data/WD80H25BHS_OID139796_KO.pdf'"
+    ) in bicep

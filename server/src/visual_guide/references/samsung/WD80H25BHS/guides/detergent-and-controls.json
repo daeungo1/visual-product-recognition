@@ -1,0 +1,37 @@
+{
+  "guide_id": "detergent-and-controls",
+  "title": "세제함과 조작부 안내",
+  "exact_model_codes": [
+    "WD80H25BHS"
+  ],
+  "reviewed": true,
+  "steps": [
+    {
+      "step_id": "locate-detergent-and-controls",
+      "required_state": "front_visible",
+      "target_ids": [
+        "detergent_dispenser",
+        "control_panel"
+      ],
+      "instruction": "제품 전면 하단의 세제함 전면 덮개와 전면 상단 가운데의 조작부 위치를 확인하세요.",
+      "expected_state": "targets_confirmed",
+      "verification": "visual_confirmation",
+      "source_manual_id": "wd80h25bhs-ko-20260916",
+      "source_page": 18,
+      "source_evidence": "제품 살펴보기: 02 조작부, 07 일반 세제함, 08 선택 세제함, 09 세제함 전면 덮개."
+    },
+    {
+      "step_id": "open-detergent-dispenser",
+      "required_state": "targets_confirmed",
+      "target_ids": [
+        "detergent_dispenser"
+      ],
+      "instruction": "제품 전면 하단 덮개의 상단 가운데를 딸깍 소리가 나도록 눌러 여세요.",
+      "expected_state": "detergent_dispenser_open",
+      "verification": "visual_confirmation",
+      "source_manual_id": "wd80h25bhs-ko-20260916",
+      "source_page": 22,
+      "source_evidence": "제품 전면 하단의 세제함 전면 덮개를 열면 일반 세제함과 선택 세제함을 사용할 수 있습니다."
+    }
+  ]
+}

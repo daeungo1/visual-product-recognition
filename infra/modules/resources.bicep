@@ -252,6 +252,10 @@ module api 'br/public:avm/res/app/container-app:0.18.0' = {
             name: 'STORAGE_ACCOUNT_URL'
             value: storage.outputs.primaryBlobEndpoint
           }
+          {
+            name: 'REVIEWED_MANUAL_PATH'
+            value: '/app/data/WD80H25BHS_OID139796_KO.pdf'
+          }
         ]
         probes: [
           {

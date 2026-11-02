@@ -1,0 +1,23 @@
+[
+  {
+    "component_id": "detergent_dispenser",
+    "canonical_name": "세제함 전면 덮개",
+    "aliases": [
+      "세제 넣는 곳",
+      "세제함",
+      "세제 투입구",
+      "세제 자동 투입 장치"
+    ],
+    "relative_region": "lower_front"
+  },
+  {
+    "component_id": "control_panel",
+    "canonical_name": "조작부",
+    "aliases": [
+      "조작 버튼",
+      "컨트롤 패널",
+      "LCD와 탐색 다이얼"
+    ],
+    "relative_region": "upper_center"
+  }
+]

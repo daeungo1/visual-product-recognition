@@ -4,7 +4,11 @@ from types import SimpleNamespace
 
 from visual_guide.contracts import RegionProposal, RegionStatus
 from visual_guide.images import ImageInput
-from visual_guide.model_gateway import FoundryRegionGateway, RegionRequest
+from visual_guide.model_gateway import (
+    FoundryRegionGateway,
+    RegionRequest,
+    build_foundry_gateway,
+)
 
 
 class FakeCompletions:
@@ -102,3 +106,40 @@ def test_gateway_preserves_explicit_not_visible_outcome():
 
     assert result.status is RegionStatus.NOT_VISIBLE
     assert result.point is None
+
+
+def test_build_gateway_uses_supplied_static_entra_token(monkeypatch):
+    captured = {}
+    fake_client = object()
+
+    def fake_azure_openai(**kwargs):
+        captured.update(kwargs)
+        return fake_client
+
+    monkeypatch.setattr("openai.AzureOpenAI", fake_azure_openai)
+
+    gateway = build_foundry_gateway(
+        "https://foundry.example.test/",
+        "gpt-6-1-terra",
+        azure_ad_token="short-lived-token",
+    )
+
+    assert gateway.client is fake_client
+    assert captured["azure_ad_token"] == "short-lived-token"
+    assert "azure_ad_token_provider" not in captured
+
+
+def test_build_gateway_reads_short_lived_token_from_environment(monkeypatch):
+    captured = {}
+    monkeypatch.setenv("FOUNDRY_AZURE_AD_TOKEN", "environment-token")
+    monkeypatch.setattr(
+        "openai.AzureOpenAI",
+        lambda **kwargs: captured.update(kwargs) or object(),
+    )
+
+    build_foundry_gateway(
+        "https://foundry.example.test/",
+        "gpt-6-1-terra",
+    )
+
+    assert captured["azure_ad_token"] == "environment-token"

@@ -14,6 +14,7 @@ RUN pip install --no-cache-dir uv==0.9.27 \
     && uv sync --frozen --no-dev --no-install-project
 
 COPY src ./src
+COPY data ./data
 
 RUN uv sync --frozen --no-dev
 

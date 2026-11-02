@@ -1,6 +1,7 @@
 """Microsoft Foundry vision adapter with strict pixel-space output."""
 
 import base64
+import os
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -84,20 +85,31 @@ class FoundryRegionGateway:
         return proposal
 
 
-def build_foundry_gateway(endpoint: str, deployment: str) -> FoundryRegionGateway:
+def build_foundry_gateway(
+    endpoint: str,
+    deployment: str,
+    *,
+    azure_ad_token: str | None = None,
+) -> FoundryRegionGateway:
     """Build an Entra-authenticated Azure OpenAI adapter."""
-    from azure.identity import DefaultAzureCredential, get_bearer_token_provider
     from openai import AzureOpenAI
 
-    token_provider = get_bearer_token_provider(
-        DefaultAzureCredential(),
-        "https://cognitiveservices.azure.com/.default",
-    )
+    azure_ad_token = azure_ad_token or os.getenv("FOUNDRY_AZURE_AD_TOKEN")
+    authentication = {}
+    if azure_ad_token is not None:
+        authentication["azure_ad_token"] = azure_ad_token
+    else:
+        from azure.identity import DefaultAzureCredential, get_bearer_token_provider
+
+        authentication["azure_ad_token_provider"] = get_bearer_token_provider(
+            DefaultAzureCredential(),
+            "https://cognitiveservices.azure.com/.default",
+        )
     client = AzureOpenAI(
         azure_endpoint=endpoint,
         api_version="2025-04-01-preview",
-        azure_ad_token_provider=token_provider,
         timeout=90,
         max_retries=1,
+        **authentication,
     )
     return FoundryRegionGateway(client=client, deployment=deployment)

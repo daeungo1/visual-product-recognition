@@ -16,6 +16,9 @@ MOBILE_DEMO_HTML = """<!doctype html>
     input, textarea, button { box-sizing: border-box; width: 100%; font: inherit; }
     input, textarea { margin-top: 6px; padding: 12px; border: 1px solid #98a2b3; border-radius: 10px; }
     textarea { min-height: 84px; }
+    fieldset { margin-top: 14px; padding: 12px; border: 1px solid #98a2b3; border-radius: 10px; }
+    fieldset label { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+    input[type="checkbox"] { width: auto; margin: 0; }
     button { margin-top: 16px; padding: 14px; border: 0; border-radius: 12px; background: #1267e5; color: white; font-weight: 800; }
     button:disabled { background: #98a2b3; }
     canvas { display: block; width: 100%; height: auto; margin-top: 16px; border-radius: 12px; background: #111; }
@@ -25,17 +28,17 @@ MOBILE_DEMO_HTML = """<!doctype html>
 </head>
 <body>
 <main>
-  <h1>제품 필터 위치 Overlay 실험</h1>
-  <p class="notice">검수된 삼성 수리 절차가 아닙니다. 현재 사진에서 지정한 부품의 위치만 실험합니다. 전원 차단이나 분해 작업은 진행하지 마세요.</p>
-  <label for="model">모델코드 또는 제품 메모</label>
-  <input id="model" placeholder="예: AR07B9350HZS">
-  <label for="component">찾을 부품</label>
-  <input id="component" value="필터 접근 커버">
-  <label for="instruction">현재 단계</label>
-  <textarea id="instruction">사진에서 현재 보이는 필터 접근 커버만 찾으세요. 보이지 않거나 구분할 수 없으면 기권하세요.</textarea>
+  <h1>WD80H25BHS 세제함·조작부 Overlay</h1>
+  <p class="notice">Bespoke AI 콤보 25/18kg 다크스틸 전용 실험입니다. 설명서의 제품 구성 근거로 위치를 찾지만 사용자가 실제 부품과 일치하는지 확인해야 합니다.</p>
+  <p><strong>현재 단계:</strong> 제품 전면 하단의 세제함 전면 덮개와 전면 상단 가운데의 조작부를 확인합니다.</p>
+  <fieldset>
+    <legend>찾을 부품</legend>
+    <label><input type="checkbox" name="target" value="detergent_dispenser" checked> 세제함 전면 덮개</label>
+    <label><input type="checkbox" name="target" value="control_panel" checked> 조작부</label>
+  </fieldset>
   <label for="photo">카메라 촬영 또는 사진 선택</label>
   <input id="photo" type="file" accept="image/jpeg,image/png" capture="environment">
-  <button id="analyze" disabled>사진에서 위치 찾기</button>
+  <button id="analyze" disabled>검수 가이드로 위치 찾기</button>
   <div id="status" role="status"></div>
   <canvas id="overlay" hidden></canvas>
   <p class="privacy">사진은 이 요청의 GPT 분석에만 전송되며 앱 서버에 저장하지 않습니다.</p>
@@ -49,6 +52,10 @@ const context = canvas.getContext('2d');
 let selectedFile;
 let image;
 const MAX_PIXELS = 7500000;
+const TARGET_COLORS = {
+  detergent_dispenser: '#ffd400',
+  control_panel: '#00d5ff'
+};
 
 photo.addEventListener('change', async () => {
   const original = photo.files[0];
@@ -87,36 +94,50 @@ button.addEventListener('click', async () => {
   status.textContent = 'GPT-6.1 Terra 분석 중...';
   context.drawImage(image, 0, 0);
   try {
-    const model = document.getElementById('model').value.trim();
-    const component = document.getElementById('component').value.trim();
-    const instruction = document.getElementById('instruction').value.trim();
-    const response = await fetch('/demo/propose', {
+    const targetIds = Array.from(
+      document.querySelectorAll('input[name="target"]:checked')
+    ).map(input => input.value);
+    if (!targetIds.length) throw new Error('찾을 부품을 하나 이상 선택하세요.');
+    const response = await fetch('/demo/ground', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
-        step_id: 'mobile-grounding-experiment',
-        component,
-        instruction: model ? `제품 메모: ${model}. ${instruction}` : instruction,
+        model_code: 'WD80H25BHS',
+        guide_id: 'detergent-and-controls',
+        step_id: 'locate-detergent-and-controls',
+        target_ids: targetIds,
         image_mime: selectedFile.type,
         image_base64: await asBase64(selectedFile)
       })
     });
     const result = await response.json();
     if (!response.ok) throw new Error(result.detail || '요청 실패');
-    if (result.status !== 'located') {
-      status.textContent = `${result.status}: ${result.evidence}`;
-      return;
-    }
-    const box = result.box;
-    const point = result.point;
-    context.strokeStyle = '#ffd400';
-    context.lineWidth = Math.max(4, canvas.width / 150);
-    context.strokeRect(box.x1, box.y1, box.x2 - box.x1, box.y2 - box.y1);
-    context.fillStyle = '#ff2d2d';
-    context.beginPath();
-    context.arc(point.x, point.y, Math.max(8, canvas.width / 70), 0, Math.PI * 2);
-    context.fill();
-    status.textContent = `후보 위치: ${result.evidence}\\n사용자가 실제 부품과 일치하는지 확인해야 합니다.`;
+    const messages = [];
+    result.targets.forEach(target => {
+      if (target.status === 'located') {
+        const color = TARGET_COLORS[target.target_id] || '#ffd400';
+        const box = target.box;
+        const point = target.point;
+        context.strokeStyle = color;
+        context.fillStyle = color;
+        context.lineWidth = Math.max(4, canvas.width / 150);
+        context.strokeRect(box.x1, box.y1, box.x2 - box.x1, box.y2 - box.y1);
+        context.beginPath();
+        context.arc(point.x, point.y, Math.max(8, canvas.width / 70), 0, Math.PI * 2);
+        context.fill();
+        context.font = `bold ${Math.max(16, canvas.width / 35)}px system-ui`;
+        context.fillText(target.component, box.x1, Math.max(24, box.y1 - 8));
+        messages.push(`${target.component}: 위치 후보 확인 (${target.attempts}차 시도)`);
+        return;
+      }
+      messages.push(
+        `${target.component}: ${target.status}\\n${target.retake_instruction}`
+      );
+    });
+    const summary = result.partial_success
+      ? '일부 부품만 찾았습니다. 아래 재촬영 안내를 확인하세요.'
+      : '대상별 분석 결과';
+    status.textContent = `${summary}\\n${messages.join('\\n')}`;
   } catch (error) {
     status.textContent = `오류: ${error.message}`;
   } finally {

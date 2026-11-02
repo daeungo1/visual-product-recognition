@@ -1,0 +1,61 @@
+{
+  "product_id": "samsung-wd80h25bhs",
+  "review_status": "human_reviewed_catalog_images",
+  "coordinate_space": "root_image_xyxy",
+  "cases": {
+    "wd80h25bhs-front-closed": {
+      "image_width": 493,
+      "image_height": 766,
+      "targets": {
+        "detergent_dispenser": [
+          14,
+          657,
+          488,
+          766
+        ],
+        "control_panel": [
+          181,
+          34,
+          320,
+          139
+        ]
+      }
+    },
+    "wd80h25bhs-angle-closed": {
+      "image_width": 565,
+      "image_height": 772,
+      "targets": {
+        "detergent_dispenser": [
+          151,
+          674,
+          555,
+          772
+        ],
+        "control_panel": [
+          305,
+          81,
+          420,
+          185
+        ]
+      }
+    },
+    "wd80h25bhs-front-door-open": {
+      "image_width": 691,
+      "image_height": 793,
+      "targets": {
+        "detergent_dispenser": [
+          208,
+          671,
+          681,
+          793
+        ],
+        "control_panel": [
+          376,
+          29,
+          510,
+          122
+        ]
+      }
+    }
+  }
+}

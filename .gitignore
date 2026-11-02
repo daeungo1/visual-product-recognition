@@ -5,6 +5,9 @@
 .test-data/
 .tools/
 .venv/
+.worktrees/
+.superpowers/
+.copilot-tracking/
 **/build/
 **/__pycache__/
 infra/main.json

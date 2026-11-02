@@ -9,16 +9,23 @@ import os
 import secrets
 import time
 from collections.abc import Callable
+from pathlib import Path
 from typing import Protocol
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from pydantic import BaseModel, Field
 
-from visual_guide.contracts import RegionProposal
+from visual_guide.contracts import (
+    MultiTargetRegionRequest,
+    MultiTargetRegionResponse,
+    RegionProposal,
+)
 from visual_guide.demo import DEMO_LOGIN_HTML, MOBILE_DEMO_HTML
 from visual_guide.images import decode_image
 from visual_guide.model_gateway import RegionRequest, build_foundry_gateway
+from visual_guide.orchestrator import GuideGroundingService
+from visual_guide.registry import load_reviewed_registry
 
 
 class ReadyModelGateway(Protocol):
@@ -29,12 +36,33 @@ class ReadyModelGateway(Protocol):
     def propose(self, request: RegionRequest, image) -> RegionProposal: ...
 
 
+class GuideGrounding(Protocol):
+    """Reviewed multi-target grounding dependency."""
+
+    def ground(
+        self,
+        request: MultiTargetRegionRequest,
+        image,
+    ) -> MultiTargetRegionResponse: ...
+
+
 class RegionBody(BaseModel):
     """Authenticated step-scoped image request."""
 
     step_id: str = Field(min_length=1, max_length=128)
     component: str = Field(min_length=1, max_length=128)
     instruction: str = Field(min_length=1, max_length=500)
+    image_mime: str
+    image_base64: str = Field(min_length=1, max_length=14_000_000)
+
+
+class GuideGroundBody(BaseModel):
+    """Authenticated reviewed-guide image request."""
+
+    model_code: str = Field(min_length=1, max_length=128)
+    guide_id: str = Field(min_length=1, max_length=128)
+    step_id: str = Field(min_length=1, max_length=128)
+    target_ids: tuple[str, ...] = Field(min_length=1, max_length=8)
     image_mime: str
     image_base64: str = Field(min_length=1, max_length=14_000_000)
 
@@ -48,6 +76,7 @@ class DemoLoginBody(BaseModel):
 def create_app(
     *,
     model_gateway: ReadyModelGateway | None,
+    guide_grounding_service: GuideGrounding | None = None,
     bearer_token: str | None = None,
     demo_access_code: str | None = None,
     demo_session_secret: str | None = None,
@@ -100,14 +129,17 @@ def create_app(
         except (KeyError, TypeError, ValueError, json.JSONDecodeError):
             raise HTTPException(401, "Demo login required.") from None
 
+    def decode_body_image(image_mime: str, image_base64: str):
+        try:
+            encoded = base64.b64decode(image_base64, validate=True)
+            return decode_image(encoded, image_mime)
+        except (binascii.Error, ValueError) as error:
+            raise HTTPException(422, str(error)) from error
+
     def run_proposal(body: RegionBody) -> RegionProposal:
         if model_gateway is None:
             raise HTTPException(503, "Model gateway unavailable.")
-        try:
-            encoded = base64.b64decode(body.image_base64, validate=True)
-            image = decode_image(encoded, body.image_mime)
-        except (binascii.Error, ValueError) as error:
-            raise HTTPException(422, str(error)) from error
+        image = decode_body_image(body.image_mime, body.image_base64)
         return model_gateway.propose(
             RegionRequest(
                 step_id=body.step_id,
@@ -116,6 +148,23 @@ def create_app(
             ),
             image,
         )
+
+    def run_grounding(body: GuideGroundBody) -> MultiTargetRegionResponse:
+        if guide_grounding_service is None:
+            raise HTTPException(503, "Guide grounding service unavailable.")
+        image = decode_body_image(body.image_mime, body.image_base64)
+        try:
+            return guide_grounding_service.ground(
+                MultiTargetRegionRequest(
+                    model_code=body.model_code,
+                    guide_id=body.guide_id,
+                    step_id=body.step_id,
+                    target_ids=body.target_ids,
+                ),
+                image,
+            )
+        except ValueError as error:
+            raise HTTPException(422, str(error)) from error
 
     @app.get("/healthz")
     def health() -> dict[str, str]:
@@ -137,6 +186,14 @@ def create_app(
     )
     def propose(body: RegionBody) -> RegionProposal:
         return run_proposal(body)
+
+    @app.post(
+        "/v1/guides/ground",
+        dependencies=[Depends(authorize)],
+        response_model=MultiTargetRegionResponse,
+    )
+    def ground_guide(body: GuideGroundBody) -> MultiTargetRegionResponse:
+        return run_grounding(body)
 
     @app.get("/demo/login", response_class=HTMLResponse)
     def demo_login_page() -> HTMLResponse:
@@ -170,6 +227,14 @@ def create_app(
     def demo_propose(body: RegionBody) -> RegionProposal:
         return run_proposal(body)
 
+    @app.post(
+        "/demo/ground",
+        response_model=MultiTargetRegionResponse,
+        dependencies=[Depends(authorize_demo)],
+    )
+    def demo_ground(body: GuideGroundBody) -> MultiTargetRegionResponse:
+        return run_grounding(body)
+
     return app
 
 
@@ -178,8 +243,18 @@ def create_configured_app() -> FastAPI:
     endpoint = os.getenv("FOUNDRY_ENDPOINT")
     deployment = os.getenv("FOUNDRY_DEPLOYMENT", "gpt-6-1-terra")
     gateway = build_foundry_gateway(endpoint, deployment) if endpoint else None
+    manual_path = os.getenv("REVIEWED_MANUAL_PATH")
+    grounding_service = None
+    if gateway is not None and manual_path:
+        registry = load_reviewed_registry(Path(__file__).parent / "references")
+        grounding_service = GuideGroundingService(
+            registry=registry,
+            gateway=gateway,
+            manual_paths={"WD80H25BHS": Path(manual_path)},
+        )
     return create_app(
         model_gateway=gateway,
+        guide_grounding_service=grounding_service,
         bearer_token=os.getenv("API_BEARER_TOKEN"),
         demo_access_code=os.getenv("DEMO_ACCESS_CODE"),
         demo_session_secret=os.getenv("DEMO_SESSION_SECRET"),
