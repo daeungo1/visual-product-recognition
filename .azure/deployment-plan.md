@@ -244,10 +244,10 @@ The reviewed evaluation produced no false `not_visible` outcomes. Mean IoU was
 upper-center control panel. Request latency was 20.858 seconds p50 and
 26.111 seconds maximum.
 
-ACR remote build `dt4` produced
-`visual-guide-api:20261102-p0p2` with digest
-`sha256:b6ee40bd5c55933261906a26ce9b06644ec2eb97a3abbcd2c7dac03685b7b048`.
-Container App revision `azapi5ovedhtoyg74w--0000008` provisioned successfully
+ACR remote build `dt5` produced
+`visual-guide-api:20261102-p0p2-r1` with digest
+`sha256:1fd4ccfc7dfe38e69694cbbbf7ec1fd0d4cfb16ab1f93cc12e6a303d284ef4d1`.
+Container App revision `azapi5ovedhtoyg74w--0000009` provisioned successfully
 and receives 100% traffic. The deployed smoke test confirmed health, readiness,
 login, the reviewed WD80H25BHS mobile page and two `located` targets on
 `bespoke1.png`.
