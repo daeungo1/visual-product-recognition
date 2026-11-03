@@ -15,6 +15,12 @@ from visual_guide.contracts import (
     RegionStatus,
 )
 from visual_guide.images import decode_image
+from visual_guide.issue_contracts import (
+    IssueResolution,
+    IssueResolutionRequest,
+    ProductStatus,
+    SupportMode,
+)
 from visual_guide.model_gateway import RegionRequest
 
 
@@ -38,6 +44,20 @@ class GuideEvaluationCase:
     image_path: Path
     request: MultiTargetRegionRequest
     ground_truth: dict[str, PixelBox]
+
+
+@dataclass(frozen=True)
+class HybridEvaluationCase:
+    """One issue-resolution evaluation with independent expected layers."""
+
+    case_id: str
+    request: IssueResolutionRequest
+    image_path: Path | None
+    expected_product_status: ProductStatus
+    expected_product_id: str | None
+    expected_issue_intent: str
+    expected_targets: frozenset[str]
+    expected_support_mode: SupportMode
 
 
 def load_guide_evaluation_cases(
@@ -127,6 +147,108 @@ def score_multi_target_response(
         "crop_retry_count": sum(target.attempts > 1 for target in response.targets),
         "targets": target_metrics,
     }
+
+
+def score_hybrid_resolution(
+    resolution: IssueResolution,
+    *,
+    expected_product_status: ProductStatus,
+    expected_product_id: str | None,
+    expected_issue_intent: str,
+    expected_targets: set[str],
+    expected_support_mode: SupportMode,
+) -> dict:
+    """Score planner, product and support-mode layers independently."""
+    predicted_targets = {
+        target.canonical_name.casefold() for target in resolution.targets
+    }
+    normalized_expected = {target.casefold() for target in expected_targets}
+    intersection = predicted_targets & normalized_expected
+    precision = (
+        len(intersection) / len(predicted_targets) if predicted_targets else 0.0
+    )
+    recall = (
+        len(intersection) / len(normalized_expected) if normalized_expected else 1.0
+    )
+    candidate_ids = [
+        candidate.product_id for candidate in resolution.product_candidates
+    ]
+    return {
+        "planner": {
+            "intent_correct": resolution.issue_intent == expected_issue_intent,
+            "target_precision": round(precision, 6),
+            "target_recall": round(recall, 6),
+            "target_truncated": resolution.truncation_reason is not None,
+        },
+        "product": {
+            "status_correct": resolution.product_status
+            is expected_product_status,
+            "top1_correct": bool(
+                expected_product_id
+                and candidate_ids
+                and candidate_ids[0] == expected_product_id
+            ),
+            "top3_correct": bool(
+                expected_product_id and expected_product_id in candidate_ids[:3]
+            ),
+            "false_registered_acceptance": (
+                expected_product_status is not ProductStatus.REGISTERED
+                and resolution.product_status is ProductStatus.REGISTERED
+            ),
+        },
+        "support": {
+            "mode_correct": resolution.support_mode is expected_support_mode,
+        },
+    }
+
+
+def evaluate_hybrid_cases(
+    cases: list[HybridEvaluationCase],
+    *,
+    service,
+    output: Path,
+    deployment: str,
+) -> dict:
+    """Evaluate issue planning, product resolution and support mode separately."""
+    if not cases:
+        raise ValueError("at least one hybrid evaluation case is required")
+    output.mkdir(parents=True, exist_ok=True)
+    reports = []
+    for case in cases:
+        image = (
+            decode_image(case.image_path.read_bytes(), _mime(case.image_path))
+            if case.image_path is not None
+            else None
+        )
+        started = time.perf_counter()
+        resolution = service.resolve(case.request, image)
+        latency_seconds = time.perf_counter() - started
+        reports.append(
+            {
+                "case_id": case.case_id,
+                "image": case.image_path.name if case.image_path else None,
+                "resolution": resolution.model_dump(mode="json"),
+                "metrics": score_hybrid_resolution(
+                    resolution,
+                    expected_product_status=case.expected_product_status,
+                    expected_product_id=case.expected_product_id,
+                    expected_issue_intent=case.expected_issue_intent,
+                    expected_targets=set(case.expected_targets),
+                    expected_support_mode=case.expected_support_mode,
+                ),
+                "latency_seconds": round(latency_seconds, 3),
+            }
+        )
+    report = {
+        "status": "hybrid_issue_evaluation",
+        "deployment": deployment,
+        "cases": reports,
+    }
+    (output / "hybrid-report.json").write_text(
+        json.dumps(report, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    return report
 
 
 def _mime(path: Path) -> str:

@@ -1,0 +1,97 @@
+[
+  {
+    "case_id": "registered-exact-model",
+    "image": "bespoke1.png",
+    "product_hint": "삼성 세탁건조기",
+    "model_code": "WD80H25BHS",
+    "user_issue": "세제를 어디에 넣고 조작부는 어디인지 알려줘",
+    "current_state": "제품 전면을 보고 있음",
+    "expected_product_status": "registered",
+    "expected_product_id": "samsung-wd80h25bhs",
+    "expected_issue_intent": "detergent_loading",
+    "expected_targets": [
+      "세제함 전면 덮개",
+      "조작부"
+    ],
+    "expected_support_mode": "reviewed_guide"
+  },
+  {
+    "case_id": "registered-alternate-wording",
+    "image": "bespoke2.png",
+    "product_hint": "비스포크 AI 콤보",
+    "model_code": "WD80H25BHS",
+    "user_issue": "세제 넣는 곳이랑 세탁 시작할 때 쓰는 화면을 찾아줘",
+    "current_state": "정면에서 문이 닫혀 있음",
+    "expected_product_status": "registered",
+    "expected_product_id": "samsung-wd80h25bhs",
+    "expected_issue_intent": "detergent_loading",
+    "expected_targets": [
+      "세제함 전면 덮개",
+      "조작부"
+    ],
+    "expected_support_mode": "reviewed_guide"
+  },
+  {
+    "case_id": "candidate-without-model",
+    "image": "bespoke1.png",
+    "product_hint": "비스포크 AI 콤보",
+    "model_code": null,
+    "user_issue": "세제 넣는 곳을 찾아줘",
+    "current_state": "제품 전면",
+    "expected_product_status": "candidate",
+    "expected_product_id": "samsung-wd80h25bhs",
+    "expected_issue_intent": "detergent_loading",
+    "expected_targets": [
+      "세제함 전면 덮개"
+    ],
+    "expected_support_mode": "zero_shot_locate_only"
+  },
+  {
+    "case_id": "unknown-product",
+    "image": null,
+    "product_hint": "등록되지 않은 주방 기기",
+    "model_code": null,
+    "user_issue": "전원 버튼을 찾아줘",
+    "current_state": null,
+    "expected_product_status": "unknown",
+    "expected_product_id": null,
+    "expected_issue_intent": "locate_power_button",
+    "expected_targets": [
+      "전원 버튼"
+    ],
+    "expected_support_mode": "zero_shot_locate_only"
+  },
+  {
+    "case_id": "wrong-model",
+    "image": null,
+    "product_hint": "삼성 세탁건조기",
+    "model_code": "WRONG-MODEL",
+    "user_issue": "세제함을 찾아줘",
+    "current_state": "제품 전면",
+    "expected_product_status": "candidate",
+    "expected_product_id": "samsung-wd80h25bhs",
+    "expected_issue_intent": "detergent_loading",
+    "expected_targets": [
+      "세제함 전면 덮개"
+    ],
+    "expected_support_mode": "zero_shot_locate_only"
+  },
+  {
+    "case_id": "four-target-limit",
+    "image": "bespoke3.png",
+    "product_hint": "삼성 세탁건조기",
+    "model_code": "WD80H25BHS",
+    "user_issue": "세제함, 조작부, 문, 먼지 필터를 모두 찾아줘",
+    "current_state": "문이 열려 있음",
+    "expected_product_status": "registered",
+    "expected_product_id": "samsung-wd80h25bhs",
+    "expected_issue_intent": "locate_appliance_components",
+    "expected_targets": [
+      "세제함 전면 덮개",
+      "조작부",
+      "세탁기 문",
+      "먼지 필터"
+    ],
+    "expected_support_mode": "reviewed_guide"
+  }
+]

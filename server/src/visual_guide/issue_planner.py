@@ -14,7 +14,11 @@ Analyze one appliance help request. Normalize the desired outcome and split it
 into at most useful atomic visible targets. Return names, aliases, purpose and
 only a broad relative image region. Never return coordinates, boxes, product
 IDs, manual claims or manipulation instructions. Product and guide approval are
-owned by deterministic server checks.
+owned by deterministic server checks. When a reviewed registry entry matches,
+use its exact issue_intent token and exact canonical_name values. Otherwise use
+short English snake_case intent and canonical target descriptions. When the
+registry supplies required_states, use the exact normalized_state token that
+best represents the visible current state.
 """
 
 
@@ -38,10 +42,10 @@ class RawPlannedIssue(StrictModel):
     """Provider output before deterministic target bounding."""
 
     issue_intent: str = Field(min_length=1, max_length=128)
-    normalized_state: str | None = Field(default=None, max_length=128)
-    visual_category: str | None = Field(default=None, max_length=128)
+    normalized_state: str | None = Field(max_length=128)
+    visual_category: str | None = Field(max_length=128)
     targets: tuple[PlannedTarget, ...] = Field(min_length=1, max_length=8)
-    truncation_reason: str | None = Field(default=None, max_length=500)
+    truncation_reason: str | None = Field(max_length=500)
 
 
 class PlannedIssue(StrictModel):

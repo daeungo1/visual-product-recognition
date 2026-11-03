@@ -59,6 +59,7 @@ def test_issue_planner_uses_strict_schema_without_geometry_fields():
         json.dumps(
             {
                 "issue_intent": "detergent_loading_and_start",
+                "normalized_state": "front_visible",
                 "visual_category": "washer_dryer",
                 "targets": [
                     _target("세제 투입부", "lower_front"),
@@ -87,6 +88,7 @@ def test_issue_planner_deduplicates_and_caps_targets_with_reason():
         json.dumps(
             {
                 "issue_intent": "inspect_parts",
+                "normalized_state": "front_visible",
                 "visual_category": "washer",
                 "targets": [
                     _target("조작부"),
@@ -116,6 +118,7 @@ def test_issue_planner_sends_optional_image_and_visual_category():
         json.dumps(
             {
                 "issue_intent": "locate_panel",
+                "normalized_state": "front_visible",
                 "visual_category": "monitor",
                 "targets": [_target("입력 버튼", "lower_front")],
                 "truncation_reason": None,
@@ -163,3 +166,69 @@ def test_fake_issue_planner_is_deterministic():
 
     assert planner.plan(_request(), (), None) is planned
     assert planner.plan(_request("다른 표현"), (), None) is planned
+
+
+def test_issue_planner_schema_requires_all_nullable_fields():
+    client = FakeClient(
+        json.dumps(
+            {
+                "issue_intent": "locate_panel",
+                "normalized_state": None,
+                "visual_category": None,
+                "targets": [_target("조작부")],
+                "truncation_reason": None,
+            }
+        )
+    )
+    planner = FoundryIssuePlanner(client=client, deployment="gpt-6-1-terra")
+
+    planner.plan(_request(), (), None)
+
+    schema = client.completions.request["response_format"]["json_schema"]["schema"]
+    assert set(schema["required"]) == set(schema["properties"])
+    for definition in schema["$defs"].values():
+        if definition.get("type") == "object":
+            assert set(definition["required"]) == set(definition["properties"])
+
+
+def test_issue_planner_prompt_requires_registry_intent_and_component_keys():
+    client = FakeClient(
+        json.dumps(
+            {
+                "issue_intent": "detergent_loading",
+                "normalized_state": "front_visible",
+                "visual_category": "washer_dryer_combo",
+                "targets": [_target("세제함 전면 덮개", "lower_front")],
+                "truncation_reason": None,
+            }
+        )
+    )
+    planner = FoundryIssuePlanner(client=client, deployment="gpt-6-1-terra")
+    summary = (
+        {
+            "product_id": "product-a",
+            "issue_mappings": (
+                {
+                    "issue_intent": "detergent_loading",
+                    "aliases": ("세제 넣기",),
+                },
+            ),
+            "components": (
+                {
+                    "component_id": "detergent_dispenser",
+                    "canonical_name": "세제함 전면 덮개",
+                    "aliases": ("세제 넣는 곳",),
+                },
+            ),
+        },
+    )
+
+    planner.plan(_request(), summary, None)
+
+    system = client.completions.request["messages"][0]["content"]
+    user_text = client.completions.request["messages"][1]["content"][0]["text"]
+    assert "exact issue_intent token" in system
+    assert "exact canonical_name" in system
+    assert "exact normalized_state token" in system
+    assert "detergent_loading" in user_text
+    assert "세제함 전면 덮개" in user_text

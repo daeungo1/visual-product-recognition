@@ -252,3 +252,14 @@ def test_registry_builds_legacy_manual_paths_without_product_hardcoding(
     paths = registry.model_manual_paths(Provider())
 
     assert paths == {"WD80H25BHS": Path("/manuals/WD80H25BHS.pdf")}
+
+
+def test_registry_summary_includes_reviewed_intents_and_components(tmp_path: Path):
+    _write_registry(tmp_path)
+    registry = load_reviewed_registry(tmp_path)
+
+    summary = registry.product_summaries()[0]
+
+    assert summary["issue_mappings"][0]["issue_intent"] == "detergent_loading"
+    assert summary["components"][0]["component_id"] == "control_panel"
+    assert "조작 버튼" in summary["components"][0]["aliases"]

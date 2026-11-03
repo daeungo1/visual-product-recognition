@@ -276,6 +276,26 @@ class ReviewedRegistry:
                 "product_family": product.product_family,
                 "aliases": product.aliases,
                 "exact_model_codes": product.exact_model_codes,
+                "issue_mappings": tuple(
+                    {
+                        "issue_intent": mapping.issue_intent,
+                        "aliases": mapping.aliases,
+                        "required_states": mapping.required_states,
+                    }
+                    for mapping in self._issue_mappings.get(product.product_id, ())
+                ),
+                "components": tuple(
+                    {
+                        "component_id": component.component_id,
+                        "canonical_name": component.canonical_name,
+                        "aliases": component.aliases,
+                        "relative_region": component.relative_region,
+                    }
+                    for component in sorted(
+                        self._components[product.product_id].values(),
+                        key=lambda item: item.component_id,
+                    )
+                ),
             }
             for product in sorted(
                 self._products.values(),

@@ -252,6 +252,30 @@ and receives 100% traffic. The deployed smoke test confirmed health, readiness,
 login, the reviewed WD80H25BHS mobile page and two `located` targets on
 `bespoke1.png`.
 
+### Hybrid issue guidance deployment
+
+Validation run: 2026-11-03, Sweden Central, existing resources unchanged.
+
+| Check | Result |
+|---|---|
+| Python tests | PASS, 118 tests |
+| Python lint | PASS |
+| Bicep build | PASS |
+| Hybrid issue live evaluation | PASS, six registered/candidate/unknown cases |
+| Exact registered wording | Product, intent, two targets and reviewed mode correct |
+| Alternate user wording | Product, intent, two targets and reviewed guide correct |
+| Candidate without model | Candidate and zero-shot mode correct |
+| Unknown product | Unknown and zero-shot locate-only mode correct |
+| Four-target issue | Three-target cap and truncation correct |
+| Deployed registered E2E | Resolve 200, two reviewed targets located |
+| Deployed unknown E2E | Resolve 200, zero-shot target located, no instruction |
+
+ACR remote build `dt6` produced `visual-guide-api:20261102-hybrid` with digest
+`sha256:dee75ecb0d112c82c7cbaf699e946f05a8530cf16904dd01f4c7272d6a24caed`.
+Container App revision `azapi5ovedhtoyg74w--0000010` is Healthy and receives
+100% traffic. The free-form mobile page, legacy reviewed routes and both hybrid
+support modes were verified against the deployed HTTPS endpoint.
+
 ## Role Assignment Verification
 
 * Status: Verified statically.

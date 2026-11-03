@@ -15,10 +15,23 @@ from visual_guide.contracts import (
 from visual_guide.evaluation import (
     EvaluationCase,
     GuideEvaluationCase,
+    HybridEvaluationCase,
     evaluate_cases,
     evaluate_guide_cases,
+    evaluate_hybrid_cases,
     load_guide_evaluation_cases,
+    score_hybrid_resolution,
     score_multi_target_response,
+)
+from visual_guide.issue_contracts import (
+    ConfidenceBand,
+    DynamicTargetSpec,
+    IssueResolution,
+    IssueResolutionRequest,
+    ProductCandidate,
+    ProductStatus,
+    SupportMode,
+    TargetSource,
 )
 
 
@@ -277,3 +290,153 @@ def test_load_guide_evaluation_cases_joins_case_and_ground_truth(tmp_path: Path)
         x2=50,
         y2=50,
     )
+
+
+def _hybrid_target(target_id, name, source):
+    registered = source is TargetSource.REGISTRY
+    return DynamicTargetSpec(
+        target_id=target_id,
+        display_name=name,
+        canonical_name=name,
+        aliases=(name,),
+        purpose="locate",
+        relative_region="full_front",
+        source=source,
+        registry_component_id=target_id if registered else None,
+        manual_evidence="manual:1" if registered else None,
+    )
+
+
+def _hybrid_resolution(status=ProductStatus.REGISTERED, targets=None):
+    registered = status is ProductStatus.REGISTERED
+    candidate = ProductCandidate(
+        product_id="product-a",
+        manufacturer="Samsung",
+        display_name="Alpha",
+        exact_model_codes=("MODEL-A",),
+        evidence_source="model_code" if registered else "product_hint",
+        confidence_band=(
+            ConfidenceBand.HIGH if registered else ConfidenceBand.MEDIUM
+        ),
+        confirmed_model_code="MODEL-A" if registered else None,
+    )
+    return IssueResolution(
+        product_status=status,
+        support_mode=(
+            SupportMode.REVIEWED_GUIDE
+            if registered
+            else SupportMode.ZERO_SHOT_LOCATE_ONLY
+        ),
+        product_candidates=() if status is ProductStatus.UNKNOWN else (candidate,),
+        issue_intent="detergent_loading",
+        targets=targets
+        or (
+            _hybrid_target("drawer", "detergent drawer", TargetSource.REGISTRY),
+            _hybrid_target("alert", "alert display", TargetSource.ZERO_SHOT),
+        ),
+        guide_candidates=(),
+        requires_product_confirmation=status is ProductStatus.CANDIDATE,
+        requires_target_confirmation=True,
+        next_capture_instruction="capture",
+        truncation_reason=None,
+    )
+
+
+def test_hybrid_metrics_keep_planner_product_and_support_layers_separate():
+    metrics = score_hybrid_resolution(
+        _hybrid_resolution(),
+        expected_product_status=ProductStatus.REGISTERED,
+        expected_product_id="product-a",
+        expected_issue_intent="detergent_loading",
+        expected_targets={"detergent drawer", "alert display"},
+        expected_support_mode=SupportMode.REVIEWED_GUIDE,
+    )
+
+    assert metrics["planner"] == {
+        "intent_correct": True,
+        "target_precision": 1.0,
+        "target_recall": 1.0,
+        "target_truncated": False,
+    }
+    assert metrics["product"]["status_correct"] is True
+    assert metrics["product"]["top1_correct"] is True
+    assert metrics["product"]["top3_correct"] is True
+    assert metrics["product"]["false_registered_acceptance"] is False
+    assert metrics["support"]["mode_correct"] is True
+
+
+def test_hybrid_metrics_detect_false_registered_acceptance():
+    metrics = score_hybrid_resolution(
+        _hybrid_resolution(),
+        expected_product_status=ProductStatus.UNKNOWN,
+        expected_product_id=None,
+        expected_issue_intent="detergent_loading",
+        expected_targets={"detergent drawer", "alert display"},
+        expected_support_mode=SupportMode.ZERO_SHOT_LOCATE_ONLY,
+    )
+
+    assert metrics["product"]["false_registered_acceptance"] is True
+    assert metrics["support"]["mode_correct"] is False
+
+
+def test_hybrid_metrics_measure_top_k_and_four_target_truncation():
+    resolution = _hybrid_resolution(
+        status=ProductStatus.CANDIDATE,
+        targets=(
+            _hybrid_target("one", "one", TargetSource.ZERO_SHOT),
+            _hybrid_target("two", "two", TargetSource.ZERO_SHOT),
+            _hybrid_target("three", "three", TargetSource.ZERO_SHOT),
+        ),
+    ).model_copy(update={"truncation_reason": "one target omitted"})
+
+    metrics = score_hybrid_resolution(
+        resolution,
+        expected_product_status=ProductStatus.CANDIDATE,
+        expected_product_id="product-a",
+        expected_issue_intent="detergent_loading",
+        expected_targets={"one", "two", "three", "four"},
+        expected_support_mode=SupportMode.ZERO_SHOT_LOCATE_ONLY,
+    )
+
+    assert metrics["planner"]["target_precision"] == 1.0
+    assert metrics["planner"]["target_recall"] == 0.75
+    assert metrics["planner"]["target_truncated"] is True
+    assert metrics["product"]["top3_correct"] is True
+
+
+def test_hybrid_evaluation_writes_separate_layer_metrics(tmp_path: Path):
+    class Service:
+        def resolve(self, request, image):
+            assert request.user_issue == "세제를 어디에 넣어?"
+            assert image is None
+            return _hybrid_resolution()
+
+    report = evaluate_hybrid_cases(
+        [
+            HybridEvaluationCase(
+                case_id="registered-alternate-wording",
+                request=IssueResolutionRequest(
+                    product_hint="Alpha",
+                    model_code="MODEL-A",
+                    user_issue="세제를 어디에 넣어?",
+                    current_state="front",
+                ),
+                image_path=None,
+                expected_product_status=ProductStatus.REGISTERED,
+                expected_product_id="product-a",
+                expected_issue_intent="detergent_loading",
+                expected_targets=frozenset(
+                    {"detergent drawer", "alert display"}
+                ),
+                expected_support_mode=SupportMode.REVIEWED_GUIDE,
+            )
+        ],
+        service=Service(),
+        output=tmp_path,
+        deployment="gpt-6-1-terra",
+    )
+
+    assert report["cases"][0]["metrics"]["planner"]["intent_correct"] is True
+    assert report["cases"][0]["metrics"]["product"]["top1_correct"] is True
+    assert report["cases"][0]["metrics"]["support"]["mode_correct"] is True
+    assert json.loads((tmp_path / "hybrid-report.json").read_text()) == report
