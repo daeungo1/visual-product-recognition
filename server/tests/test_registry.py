@@ -237,3 +237,18 @@ def test_registry_exposes_reviewed_manual_asset_metadata(tmp_path: Path):
     )
 
     assert manual.asset_name == "WD80H25BHS.pdf"
+
+
+def test_registry_builds_legacy_manual_paths_without_product_hardcoding(
+    tmp_path: Path,
+):
+    _write_registry(tmp_path)
+    registry = load_reviewed_registry(tmp_path)
+
+    class Provider:
+        def resolve(self, manual):
+            return Path("/manuals") / manual.asset_name
+
+    paths = registry.model_manual_paths(Provider())
+
+    assert paths == {"WD80H25BHS": Path("/manuals/WD80H25BHS.pdf")}

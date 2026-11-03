@@ -283,6 +283,21 @@ class ReviewedRegistry:
             )
         )
 
+    def model_manual_paths(self, provider) -> dict[str, Path]:
+        """Build exact-model manual paths for the legacy reviewed route."""
+        paths: dict[str, Path] = {}
+        for product in self._products.values():
+            for manual in product.manuals:
+                path = provider.resolve(manual)
+                for model_code in manual.applicable_models:
+                    existing = paths.get(model_code)
+                    if existing is not None and existing != path:
+                        raise ValueError(
+                            f"Multiple reviewed manuals apply to legacy model: {model_code}"
+                        )
+                    paths[model_code] = path
+        return paths
+
     def component_evidence(
         self,
         product_id: str,
