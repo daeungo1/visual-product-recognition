@@ -306,9 +306,25 @@ def test_mobile_demo_uses_login_cookie_without_exposing_api_token():
     assert "MAX_PIXELS" in page.text
     assert "canvas.toBlob" in page.text
     assert "expected-token" not in page.text
-    assert "WD80H25BHS" in page.text
-    assert "detergent_dispenser" in page.text
-    assert "control_panel" in page.text
+    assert "WD80H25BHS" not in page.text
+    assert "detergent_dispenser" not in page.text
+    assert "control_panel" not in page.text
+    assert 'id="productHint"' in page.text
+    assert 'id="modelCode"' in page.text
+    assert 'id="userIssue"' in page.text
+    assert 'id="userIssue"' in page.text and "required" in page.text
+    assert 'id="currentState"' in page.text
+    assert "MAX_TARGETS = 3" in page.text
+    assert "/demo/issues/resolve" in page.text
+    assert "/demo/issues/ground" in page.text
+    assert "issueResolution" in page.text
+    assert "renderTargetChips" in page.text
+    assert "addTarget" in page.text
+    assert "requires_product_confirmation" in page.text
+    assert "reviewed_guide" in page.text
+    assert "zero_shot_locate_only" in page.text
+    assert "source_reference" in page.text
+    assert "selectedFile" in page.text
     assert 'id="component"' not in page.text
     assert 'id="instruction"' not in page.text
     assert "result.targets" in page.text

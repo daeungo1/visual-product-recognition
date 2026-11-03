@@ -84,6 +84,7 @@ class IssueResolutionService:
             guide_id=guide.guide_id,
             title=guide.title,
             applicability="exact",
+            step_ids=tuple(step.step_id for step in guide.steps),
             source_references=references,
         )
 

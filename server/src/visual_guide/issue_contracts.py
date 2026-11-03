@@ -117,6 +117,7 @@ class GuideCandidate(StrictModel):
     guide_id: str = Field(min_length=1, max_length=128)
     title: str = Field(min_length=1, max_length=256)
     applicability: Literal["exact", "candidate"]
+    step_ids: tuple[str, ...] = Field(min_length=1)
     source_references: tuple[str, ...] = Field(min_length=1)
 
 

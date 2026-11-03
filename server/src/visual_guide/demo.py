@@ -1,11 +1,11 @@
-"""Mobile browser capture and Overlay experiment."""
+"""Mobile browser capture and hybrid issue guidance experiment."""
 
 MOBILE_DEMO_HTML = """<!doctype html>
 <html lang="ko">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Visual Product Guide PoC</title>
+  <title>Visual Product Guide</title>
   <style>
     :root { color-scheme: light; font-family: system-ui, sans-serif; }
     body { margin: 0; background: #f3f5f7; color: #101828; }
@@ -13,53 +13,76 @@ MOBILE_DEMO_HTML = """<!doctype html>
     h1 { font-size: 1.45rem; margin: 8px 0; }
     .notice { background: #fff4e5; border: 1px solid #f6c766; padding: 12px; border-radius: 12px; }
     label { display: block; margin-top: 14px; font-weight: 700; }
-    input, textarea, button { box-sizing: border-box; width: 100%; font: inherit; }
-    input, textarea { margin-top: 6px; padding: 12px; border: 1px solid #98a2b3; border-radius: 10px; }
+    input, textarea, button, select { box-sizing: border-box; width: 100%; font: inherit; }
+    input, textarea, select { margin-top: 6px; padding: 12px; border: 1px solid #98a2b3; border-radius: 10px; }
     textarea { min-height: 84px; }
-    fieldset { margin-top: 14px; padding: 12px; border: 1px solid #98a2b3; border-radius: 10px; }
-    fieldset label { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
-    input[type="checkbox"] { width: auto; margin: 0; }
-    button { margin-top: 16px; padding: 14px; border: 0; border-radius: 12px; background: #1267e5; color: white; font-weight: 800; }
+    button { margin-top: 12px; padding: 14px; border: 0; border-radius: 12px; background: #1267e5; color: white; font-weight: 800; }
+    button.secondary { background: #475467; }
+    button.small { width: auto; padding: 8px 10px; margin: 0; }
     button:disabled { background: #98a2b3; }
     canvas { display: block; width: 100%; height: auto; margin-top: 16px; border-radius: 12px; background: #111; }
     #status { min-height: 48px; padding: 12px 0; white-space: pre-wrap; }
+    #resolution { margin-top: 12px; padding: 12px; background: white; border-radius: 12px; }
+    #resolution[hidden] { display: none; }
+    .mode { display: inline-block; padding: 4px 8px; border-radius: 999px; font-weight: 700; font-size: .85rem; }
+    .reviewed { background: #d1fadf; color: #05603a; }
+    .zero-shot { background: #fef0c7; color: #93370d; }
+    .target-chip { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; margin-top: 8px; }
+    .target-chip label { margin: 0; }
     .privacy { color: #475467; font-size: .9rem; }
   </style>
 </head>
 <body>
 <main>
-  <h1>WD80H25BHS 세제함·조작부 Overlay</h1>
-  <p class="notice">Bespoke AI 콤보 25/18kg 다크스틸 전용 실험입니다. 설명서의 제품 구성 근거로 위치를 찾지만 사용자가 실제 부품과 일치하는지 확인해야 합니다.</p>
-  <p><strong>현재 단계:</strong> 제품 전면 하단의 세제함 전면 덮개와 전면 상단 가운데의 조작부를 확인합니다.</p>
-  <fieldset>
-    <legend>찾을 부품</legend>
-    <label><input type="checkbox" name="target" value="detergent_dispenser" checked> 세제함 전면 덮개</label>
-    <label><input type="checkbox" name="target" value="control_panel" checked> 조작부</label>
-  </fieldset>
+  <h1>제품 문제 Visual Guide</h1>
+  <p class="notice">제품과 문제를 자유롭게 입력하세요. 등록 제품은 검수 설명서 기반으로 안내하고, 미등록 제품은 보이는 대상의 위치만 실험합니다.</p>
+  <label for="productHint">제품 메모 또는 제품명 (선택)</label>
+  <input id="productHint" placeholder="예: 삼성 세탁건조기">
+  <label for="modelCode">모델코드 (선택)</label>
+  <input id="modelCode" placeholder="예: 제품 라벨에 표시된 코드">
+  <label for="userIssue">문제 또는 찾을 대상</label>
+  <textarea id="userIssue" required placeholder="예: 세제를 어디에 넣고 어떤 버튼을 눌러야 해?"></textarea>
+  <label for="currentState">현재 상태 (선택)</label>
+  <input id="currentState" placeholder="예: 제품 전면을 보고 있고 문은 닫혀 있음">
   <label for="photo">카메라 촬영 또는 사진 선택</label>
   <input id="photo" type="file" accept="image/jpeg,image/png" capture="environment">
-  <button id="analyze" disabled>검수 가이드로 위치 찾기</button>
+  <button id="analyze" disabled>문제 분석</button>
+
+  <section id="resolution" hidden>
+    <div id="supportMode"></div>
+    <div id="productConfirmation" hidden>
+      <label for="productCandidate">제품 후보 확인</label>
+      <select id="productCandidate"></select>
+    </div>
+    <h2>확인할 대상</h2>
+    <div id="targetChips"></div>
+    <button id="addTarget" class="secondary" type="button">+ 대상 추가</button>
+    <button id="ground" type="button">확인한 대상을 사진에서 찾기</button>
+  </section>
+
   <div id="status" role="status"></div>
   <canvas id="overlay" hidden></canvas>
-  <p class="privacy">사진은 이 요청의 GPT 분석에만 전송되며 앱 서버에 저장하지 않습니다.</p>
+  <p class="privacy">사진은 문제 분석과 위치 요청에 전송되며 앱 서버에 저장하지 않습니다.</p>
 </main>
 <script>
+const MAX_PIXELS = 7500000;
+const MAX_TARGETS = 3;
+const ZERO_SHOT_MODE = 'zero_shot_locate_only';
+const colors = ['#ffd400', '#00d5ff', '#ff5ca8'];
 const photo = document.getElementById('photo');
-const button = document.getElementById('analyze');
+const analyze = document.getElementById('analyze');
+const ground = document.getElementById('ground');
 const status = document.getElementById('status');
 const canvas = document.getElementById('overlay');
 const context = canvas.getContext('2d');
 let selectedFile;
 let image;
-const MAX_PIXELS = 7500000;
-const TARGET_COLORS = {
-  detergent_dispenser: '#ffd400',
-  control_panel: '#00d5ff'
-};
+let issueResolution;
+let confirmedTargets = [];
 
 photo.addEventListener('change', async () => {
   const original = photo.files[0];
-  button.disabled = !original;
+  analyze.disabled = !original;
   if (!original) return;
   const source = await createImageBitmap(original);
   const scale = Math.min(1, Math.sqrt(MAX_PIXELS / (source.width * source.height)));
@@ -89,35 +112,196 @@ function asBase64(file) {
   });
 }
 
-button.addEventListener('click', async () => {
-  button.disabled = true;
-  status.textContent = 'GPT-6.1 Terra 분석 중...';
-  context.drawImage(image, 0, 0);
-  try {
-    const targetIds = Array.from(
-      document.querySelectorAll('input[name="target"]:checked')
-    ).map(input => input.value);
-    if (!targetIds.length) throw new Error('찾을 부품을 하나 이상 선택하세요.');
-    const response = await fetch('/demo/ground', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        model_code: 'WD80H25BHS',
-        guide_id: 'detergent-and-controls',
-        step_id: 'locate-detergent-and-controls',
-        target_ids: targetIds,
-        image_mime: selectedFile.type,
-        image_base64: await asBase64(selectedFile)
-      })
+function issueBody(issueText) {
+  return {
+    product_hint: document.getElementById('productHint').value.trim() || null,
+    model_code: document.getElementById('modelCode').value.trim() || null,
+    user_issue: issueText,
+    current_state: document.getElementById('currentState').value.trim() || null,
+    image_mime: selectedFile.type,
+    image_base64: null
+  };
+}
+
+async function postJson(url, body) {
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(body)
+  });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.detail || '요청 실패');
+  return result;
+}
+
+function renderSupportMode() {
+  const mode = document.getElementById('supportMode');
+  const reviewed = issueResolution.support_mode === 'reviewed_guide';
+  mode.innerHTML = reviewed
+    ? '<span class="mode reviewed">검수 가이드</span> 정확한 제품과 설명서 근거를 사용합니다.'
+    : `<span class="mode zero-shot">Zero-shot 위치 실험</span> ${ZERO_SHOT_MODE}: 공식 조작 절차가 아닙니다.`;
+  const confirmation = document.getElementById('productConfirmation');
+  const select = document.getElementById('productCandidate');
+  confirmation.hidden = !issueResolution.requires_product_confirmation;
+  select.replaceChildren();
+  issueResolution.product_candidates.forEach(candidate => {
+    const option = document.createElement('option');
+    option.value = candidate.product_id;
+    option.dataset.models = JSON.stringify(candidate.exact_model_codes);
+    option.textContent = `${candidate.manufacturer} ${candidate.display_name} (${candidate.confidence_band})`;
+    select.appendChild(option);
+  });
+}
+
+function renderTargetChips() {
+  const container = document.getElementById('targetChips');
+  container.replaceChildren();
+  confirmedTargets.forEach((target, index) => {
+    const row = document.createElement('div');
+    row.className = 'target-chip';
+    const label = document.createElement('label');
+    label.textContent = target.source === 'registry' ? '검수 대상' : '자유 대상';
+    const input = document.createElement('input');
+    input.className = 'target-name';
+    input.value = target.display_name;
+    input.addEventListener('change', () => {
+      confirmedTargets[index] = {...target, display_name: input.value.trim() || target.display_name};
     });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.detail || '요청 실패');
-    const messages = [];
-    result.targets.forEach(target => {
-      if (target.status === 'located') {
-        const color = TARGET_COLORS[target.target_id] || '#ffd400';
-        const box = target.box;
-        const point = target.point;
+    label.appendChild(input);
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'small secondary';
+    remove.textContent = '삭제';
+    remove.addEventListener('click', () => {
+      confirmedTargets.splice(index, 1);
+      renderTargetChips();
+    });
+    row.append(label, remove);
+    container.appendChild(row);
+  });
+}
+
+async function resolveIssue(issueText) {
+  const body = issueBody(issueText);
+  body.image_base64 = await asBase64(selectedFile);
+  return postJson('/demo/issues/resolve', body);
+}
+
+analyze.addEventListener('click', async () => {
+  const issue = document.getElementById('userIssue').value.trim();
+  if (!issue) {
+    status.textContent = '문제 또는 찾을 대상을 입력하세요.';
+    return;
+  }
+  analyze.disabled = true;
+  status.textContent = '제품과 문제를 분석 중...';
+  try {
+    issueResolution = await resolveIssue(issue);
+    confirmedTargets = issueResolution.targets.slice(0, MAX_TARGETS);
+    renderSupportMode();
+    renderTargetChips();
+    document.getElementById('resolution').hidden = false;
+    status.textContent = issueResolution.next_capture_instruction;
+  } catch (error) {
+    status.textContent = `오류: ${error.message}`;
+  } finally {
+    analyze.disabled = false;
+  }
+});
+
+document.getElementById('addTarget').addEventListener('click', async () => {
+  if (confirmedTargets.length >= MAX_TARGETS) {
+    status.textContent = '한 번에 최대 3개 대상만 찾을 수 있습니다.';
+    return;
+  }
+  const phrase = window.prompt('추가로 찾을 대상을 입력하세요.');
+  if (!phrase) return;
+  status.textContent = '추가 대상을 다시 분석 중...';
+  try {
+    const added = await resolveIssue(phrase);
+    for (const target of added.targets) {
+      if (confirmedTargets.length >= MAX_TARGETS) break;
+      if (!confirmedTargets.some(item => item.canonical_name === target.canonical_name)) {
+        confirmedTargets.push(target);
+      }
+    }
+    renderTargetChips();
+    status.textContent = '추가 대상을 확인하세요.';
+  } catch (error) {
+    status.textContent = `오류: ${error.message}`;
+  }
+});
+
+function confirmedProduct() {
+  if (issueResolution.product_status === 'registered') {
+    const candidate = issueResolution.product_candidates[0];
+    return {
+      productId: candidate.product_id,
+      modelCode: candidate.confirmed_model_code
+    };
+  }
+  if (issueResolution.product_status === 'candidate') {
+    const option = document.getElementById('productCandidate').selectedOptions[0];
+    const models = JSON.parse(option.dataset.models);
+    document.getElementById('modelCode').value = models[0];
+    return {productId: option.value, modelCode: models[0]};
+  }
+  return {productId: null, modelCode: null};
+}
+
+ground.addEventListener('click', async () => {
+  if (!confirmedTargets.length) {
+    status.textContent = '찾을 대상을 하나 이상 확인하세요.';
+    return;
+  }
+  ground.disabled = true;
+  context.drawImage(image, 0, 0);
+  status.textContent = '확인한 대상을 찾는 중...';
+  try {
+    let product = confirmedProduct();
+    if (issueResolution.product_status === 'candidate') {
+      const renamed = new Map(
+        confirmedTargets.map(target => [target.canonical_name, target.display_name])
+      );
+      issueResolution = await resolveIssue(
+        document.getElementById('userIssue').value.trim()
+      );
+      confirmedTargets = issueResolution.targets
+        .slice(0, MAX_TARGETS)
+        .map(target => ({
+          ...target,
+          display_name: renamed.get(target.canonical_name) || target.display_name
+        }));
+      renderSupportMode();
+      renderTargetChips();
+      product = confirmedProduct();
+    }
+    const guide = issueResolution.guide_candidates[0] || null;
+    const body = {
+      request: {
+        resolution: issueResolution,
+        confirmed_product_id: product.productId,
+        confirmed_model_code: product.modelCode,
+        confirmed_guide_id: guide ? guide.guide_id : null,
+        confirmed_step_id: guide && guide.step_ids.length ? guide.step_ids[0] : null,
+        confirmed_targets: confirmedTargets
+      },
+      image_mime: selectedFile.type,
+      image_base64: await asBase64(selectedFile)
+    };
+    const result = await postJson('/demo/issues/ground', body);
+    const messages = [
+      result.partial_success
+        ? '일부 대상만 찾았습니다.'
+        : '대상 분석이 완료되었습니다.'
+    ];
+    result.targets.forEach((item, index) => {
+      const target = item.target;
+      const grounding = item.grounding;
+      if (grounding.status === 'located') {
+        const color = colors[index % colors.length];
+        const box = grounding.box;
+        const point = grounding.point;
         context.strokeStyle = color;
         context.fillStyle = color;
         context.lineWidth = Math.max(4, canvas.width / 150);
@@ -126,22 +310,21 @@ button.addEventListener('click', async () => {
         context.arc(point.x, point.y, Math.max(8, canvas.width / 70), 0, Math.PI * 2);
         context.fill();
         context.font = `bold ${Math.max(16, canvas.width / 35)}px system-ui`;
-        context.fillText(target.component, box.x1, Math.max(24, box.y1 - 8));
-        messages.push(`${target.component}: 위치 후보 확인 (${target.attempts}차 시도)`);
-        return;
+        context.fillText(target.display_name, box.x1, Math.max(24, box.y1 - 8));
       }
-      messages.push(
-        `${target.component}: ${target.status}\\n${target.retake_instruction}`
-      );
+      const authority = target.source === 'registry' ? '검수' : 'zero-shot';
+      messages.push(`${target.display_name} [${authority}]: ${grounding.status}`);
+      if (item.instruction && item.source_reference) {
+        messages.push(`${item.instruction} (${item.source_reference})`);
+      } else if (grounding.retake_instruction) {
+        messages.push(grounding.retake_instruction);
+      }
     });
-    const summary = result.partial_success
-      ? '일부 부품만 찾았습니다. 아래 재촬영 안내를 확인하세요.'
-      : '대상별 분석 결과';
-    status.textContent = `${summary}\\n${messages.join('\\n')}`;
+    status.textContent = messages.join('\\n');
   } catch (error) {
     status.textContent = `오류: ${error.message}`;
   } finally {
-    button.disabled = false;
+    ground.disabled = false;
   }
 });
 </script>
