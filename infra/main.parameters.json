@@ -10,12 +10,6 @@
     },
     "apiBearerToken": {
       "value": "${API_BEARER_TOKEN}"
-    },
-    "demoAccessCode": {
-      "value": "${DEMO_ACCESS_CODE}"
-    },
-    "demoSessionSecret": {
-      "value": "${DEMO_SESSION_SECRET}"
     }
   }
 }

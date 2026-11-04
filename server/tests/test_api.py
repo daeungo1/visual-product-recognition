@@ -293,44 +293,36 @@ def test_multi_target_grounding_endpoint_rejects_unknown_target():
     assert response.json()["detail"] == "Unknown target: unknown_part"
 
 
-def test_mobile_demo_uses_login_cookie_without_exposing_api_token():
+def test_mobile_demo_is_public_and_uses_intuitive_step_layout():
     client = TestClient(
         create_app(
             model_gateway=FakeGateway(),
             bearer_token="expected-token",
-            demo_access_code="one-time-demo-code",
-            demo_session_secret="dedicated-session-secret",
         ),
         base_url="https://testserver",
     )
 
-    unauthorized = client.get("/demo")
-    login_page = client.get("/demo/login")
-    bad_login = client.post(
-        "/demo/login",
-        json={"code": "wrong-code-value"},
-        follow_redirects=False,
-    )
-    login = client.post(
-        "/demo/login",
-        json={"code": "one-time-demo-code"},
-        follow_redirects=False,
-    )
     page = client.get("/demo")
+    old_login = client.get("/demo/login", follow_redirects=False)
 
-    assert unauthorized.status_code == 401
-    assert login_page.status_code == 200
-    assert 'type="password"' in login_page.text
-    assert bad_login.status_code == 401
-    assert login.status_code == 303
-    assert "one-time-demo-code" not in login.headers["location"]
-    assert "expected-token" not in login.headers.get("set-cookie", "")
-    assert login.headers["cache-control"] == "no-store"
     assert page.status_code == 200
+    assert old_login.status_code == 307
+    assert old_login.headers["location"] == "/demo"
+    assert 'type="password"' not in page.text
     assert 'capture="environment"' in page.text
     assert "MAX_PIXELS" in page.text
     assert "canvas.toBlob" in page.text
     assert "expected-token" not in page.text
+    assert "--brand-primary:" in page.text
+    assert 'class="hero"' in page.text
+    assert 'class="stepper"' in page.text
+    assert 'data-step="1"' in page.text
+    assert 'data-step="2"' in page.text
+    assert 'data-step="3"' in page.text
+    assert 'class="action-bar"' in page.text
+    assert "사진 선택 또는 카메라 촬영" in page.text
+    assert "AI로 도움 방법 찾기" in page.text
+    assert "분석 결과 확인" in page.text
     assert "WD80H25BHS" not in page.text
     assert "detergent_dispenser" not in page.text
     assert "control_panel" not in page.text
@@ -357,17 +349,14 @@ def test_mobile_demo_uses_login_cookie_without_exposing_api_token():
     assert "retake_instruction" in page.text
 
 
-def test_mobile_demo_cookie_can_call_proposal_without_bearer_header():
+def test_public_demo_can_call_proposal_without_bearer_header():
     client = TestClient(
         create_app(
             model_gateway=FakeGateway(),
             bearer_token="expected-token",
-            demo_access_code="one-time-demo-code",
-            demo_session_secret="dedicated-session-secret",
         ),
         base_url="https://testserver",
     )
-    client.post("/demo/login", json={"code": "one-time-demo-code"})
 
     response = client.post(
         "/demo/propose",
@@ -384,18 +373,15 @@ def test_mobile_demo_cookie_can_call_proposal_without_bearer_header():
     assert response.json()["status"] == "located"
 
 
-def test_mobile_demo_cookie_can_call_reviewed_multi_target_grounding():
+def test_public_demo_can_call_reviewed_multi_target_grounding():
     client = TestClient(
         create_app(
             model_gateway=FakeGateway(),
             guide_grounding_service=FakeGroundingService(),
             bearer_token="expected-token",
-            demo_access_code="one-time-demo-code",
-            demo_session_secret="dedicated-session-secret",
         ),
         base_url="https://testserver",
     )
-    client.post("/demo/login", json={"code": "one-time-demo-code"})
 
     response = client.post(
         "/demo/ground",
@@ -418,8 +404,7 @@ def test_configured_app_wires_reviewed_grounding_service(monkeypatch):
     monkeypatch.setenv("FOUNDRY_DEPLOYMENT", "gpt-6-1-terra")
     monkeypatch.setenv("REVIEWED_MANUAL_PATH", "/app/data/WD80H25BHS.pdf")
     monkeypatch.setenv("API_BEARER_TOKEN", "expected-token")
-    monkeypatch.setenv("DEMO_ACCESS_CODE", "one-time-demo-code")
-    monkeypatch.setenv("DEMO_SESSION_SECRET", "dedicated-session-secret")
+    monkeypatch.setenv("ISSUE_RESOLUTION_SECRET", "issue-resolution-secret")
     monkeypatch.setattr(
         main_module,
         "build_foundry_gateway",
@@ -440,7 +425,6 @@ def test_configured_app_wires_reviewed_grounding_service(monkeypatch):
         lambda **_kwargs: FakeGroundingService(),
     )
     client = TestClient(main_module.create_configured_app(), base_url="https://testserver")
-    client.post("/demo/login", json={"code": "one-time-demo-code"})
 
     response = client.post(
         "/demo/ground",
@@ -456,50 +440,6 @@ def test_configured_app_wires_reviewed_grounding_service(monkeypatch):
 
     assert response.status_code == 200
     assert response.json()["targets"][0]["target_id"] == "control_panel"
-
-
-def test_rotating_demo_access_code_invalidates_existing_cookie():
-    first = TestClient(
-        create_app(
-            model_gateway=FakeGateway(),
-            bearer_token="expected-token",
-            demo_access_code="first-code",
-            demo_session_secret="dedicated-session-secret",
-        ),
-        base_url="https://testserver",
-    )
-    first.post("/demo/login", json={"code": "first-code"})
-    old_cookie = first.cookies.get("visual_guide_demo")
-    rotated = TestClient(
-        create_app(
-            model_gateway=FakeGateway(),
-            bearer_token="expected-token",
-            demo_access_code="second-code",
-            demo_session_secret="dedicated-session-secret",
-        ),
-        base_url="https://testserver",
-        cookies={"visual_guide_demo": old_cookie},
-    )
-
-    assert rotated.get("/demo").status_code == 401
-
-
-def test_demo_cookie_expires_on_the_server():
-    now = [1_000.0]
-    client = TestClient(
-        create_app(
-            model_gateway=FakeGateway(),
-            bearer_token="expected-token",
-            demo_access_code="one-time-demo-code",
-            demo_session_secret="dedicated-session-secret",
-            clock=lambda: now[0],
-        ),
-        base_url="https://testserver",
-    )
-    client.post("/demo/login", json={"code": "one-time-demo-code"})
-    now[0] += 8 * 60 * 60 + 1
-
-    assert client.get("/demo").status_code == 401
 
 
 @pytest.mark.parametrize(
@@ -640,19 +580,16 @@ def test_issue_ground_endpoint_returns_422_for_inapplicable_guide():
     assert response.json()["detail"] == "inapplicable guide"
 
 
-def test_demo_cookie_can_resolve_and_ground_issue():
+def test_public_demo_can_resolve_and_ground_issue():
     resolution = _issue_resolution()
     client = TestClient(
         create_app(
             model_gateway=FakeGateway(),
             issue_resolution_service=FakeIssueResolutionService(),
             issue_grounding_service=FakeIssueGroundingService(),
-            demo_access_code="one-time-demo-code",
-            demo_session_secret="dedicated-session-secret",
         ),
         base_url="https://testserver",
     )
-    client.post("/demo/login", json={"code": "one-time-demo-code"})
 
     resolved = client.post(
         "/demo/issues/resolve",

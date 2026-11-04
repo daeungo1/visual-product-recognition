@@ -2,17 +2,11 @@
 
 import base64
 import binascii
-import hashlib
-import hmac
-import json
 import os
-import secrets
-import time
-from collections.abc import Callable
 from pathlib import Path
 from typing import Protocol
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from openai import OpenAIError
 from pydantic import BaseModel, Field, model_validator
@@ -22,7 +16,7 @@ from visual_guide.contracts import (
     MultiTargetRegionResponse,
     RegionProposal,
 )
-from visual_guide.demo import DEMO_LOGIN_HTML, MOBILE_DEMO_HTML
+from visual_guide.demo import MOBILE_DEMO_HTML
 from visual_guide.images import decode_image
 from visual_guide.issue_contracts import (
     IssueGroundingRequest,
@@ -126,12 +120,6 @@ class IssueGroundBody(BaseModel):
     image_base64: str = Field(min_length=1, max_length=14_000_000)
 
 
-class DemoLoginBody(BaseModel):
-    """Access code submitted in a request body, never in the URL."""
-
-    code: str = Field(min_length=16, max_length=256)
-
-
 def create_app(
     *,
     model_gateway: ReadyModelGateway | None,
@@ -139,9 +127,6 @@ def create_app(
     issue_resolution_service: IssueResolver | None = None,
     issue_grounding_service: IssueGrounder | None = None,
     bearer_token: str | None = None,
-    demo_access_code: str | None = None,
-    demo_session_secret: str | None = None,
-    clock: Callable[[], float] = time.time,
 ) -> FastAPI:
     """Create the visual guide API without silent model fallbacks."""
     app = FastAPI(title="Visual Product Guide")
@@ -151,44 +136,6 @@ def create_app(
             raise HTTPException(503, "API authentication is not configured.")
         if authorization != f"Bearer {bearer_token}":
             raise HTTPException(401, "Bearer token required.")
-
-    def demo_cookie_value() -> str:
-        if demo_access_code is None or demo_session_secret is None:
-            raise HTTPException(503, "Demo authentication is not configured.")
-        payload = json.dumps(
-            {
-                "exp": int(clock()) + 8 * 60 * 60,
-                "generation": hashlib.sha256(demo_access_code.encode()).hexdigest()[:16],
-                "nonce": secrets.token_urlsafe(16),
-            },
-            separators=(",", ":"),
-        ).encode()
-        encoded = base64.urlsafe_b64encode(payload).decode().rstrip("=")
-        signature = hmac.new(
-            demo_session_secret.encode(),
-            encoded.encode(),
-            hashlib.sha256,
-        ).hexdigest()
-        return f"{encoded}.{signature}"
-
-    def authorize_demo(request: Request) -> None:
-        supplied = request.cookies.get("visual_guide_demo", "")
-        try:
-            encoded, supplied_signature = supplied.split(".", 1)
-            expected_signature = hmac.new(
-                (demo_session_secret or "").encode(),
-                encoded.encode(),
-                hashlib.sha256,
-            ).hexdigest()
-            if not hmac.compare_digest(supplied_signature, expected_signature):
-                raise ValueError("invalid signature")
-            padding = "=" * (-len(encoded) % 4)
-            payload = json.loads(base64.urlsafe_b64decode(encoded + padding))
-            generation = hashlib.sha256((demo_access_code or "").encode()).hexdigest()[:16]
-            if payload["exp"] < int(clock()) or payload["generation"] != generation:
-                raise ValueError("expired or rotated")
-        except (KeyError, TypeError, ValueError, json.JSONDecodeError):
-            raise HTTPException(401, "Demo login required.") from None
 
     def decode_body_image(image_mime: str, image_base64: str):
         try:
@@ -330,34 +277,17 @@ def create_app(
     def ground_issue(body: IssueGroundBody) -> IssueGroundingResponse:
         return run_issue_grounding(body)
 
-    @app.get("/demo/login", response_class=HTMLResponse)
-    def demo_login_page() -> HTMLResponse:
-        return HTMLResponse(DEMO_LOGIN_HTML, headers={"Cache-Control": "no-store"})
+    @app.get("/demo/login")
+    def demo_login_redirect() -> RedirectResponse:
+        return RedirectResponse("/demo", status_code=307)
 
-    @app.post("/demo/login")
-    def demo_login(body: DemoLoginBody) -> RedirectResponse:
-        if demo_access_code is None or not hmac.compare_digest(body.code, demo_access_code):
-            raise HTTPException(401, "Invalid demo access code.")
-        response = RedirectResponse("/demo", status_code=303)
-        response.headers["Cache-Control"] = "no-store"
-        response.set_cookie(
-            "visual_guide_demo",
-            demo_cookie_value(),
-            max_age=8 * 60 * 60,
-            secure=True,
-            httponly=True,
-            samesite="strict",
-        )
-        return response
-
-    @app.get("/demo", response_class=HTMLResponse, dependencies=[Depends(authorize_demo)])
+    @app.get("/demo", response_class=HTMLResponse)
     def demo() -> HTMLResponse:
         return HTMLResponse(MOBILE_DEMO_HTML, headers={"Cache-Control": "no-store"})
 
     @app.post(
         "/demo/propose",
         response_model=RegionProposal,
-        dependencies=[Depends(authorize_demo)],
     )
     def demo_propose(body: RegionBody) -> RegionProposal:
         return run_proposal(body)
@@ -365,7 +295,6 @@ def create_app(
     @app.post(
         "/demo/ground",
         response_model=MultiTargetRegionResponse,
-        dependencies=[Depends(authorize_demo)],
     )
     def demo_ground(body: GuideGroundBody) -> MultiTargetRegionResponse:
         return run_grounding(body)
@@ -373,7 +302,6 @@ def create_app(
     @app.post(
         "/demo/issues/resolve",
         response_model=IssueResolution,
-        dependencies=[Depends(authorize_demo)],
     )
     def demo_resolve_issue(body: IssueResolveBody) -> IssueResolution:
         return run_issue_resolution(body)
@@ -381,7 +309,6 @@ def create_app(
     @app.post(
         "/demo/issues/ground",
         response_model=IssueGroundingResponse,
-        dependencies=[Depends(authorize_demo)],
     )
     def demo_ground_issue(body: IssueGroundBody) -> IssueGroundingResponse:
         return run_issue_grounding(body)
@@ -399,7 +326,7 @@ def create_configured_app() -> FastAPI:
     issue_resolution_service = None
     issue_grounding_service = None
     resolution_secret = os.getenv("ISSUE_RESOLUTION_SECRET") or os.getenv(
-        "DEMO_SESSION_SECRET"
+        "API_BEARER_TOKEN"
     )
     if gateway is not None and manual_path and resolution_secret:
         registry = load_reviewed_registry(Path(__file__).parent / "references")
@@ -430,8 +357,6 @@ def create_configured_app() -> FastAPI:
         issue_resolution_service=issue_resolution_service,
         issue_grounding_service=issue_grounding_service,
         bearer_token=os.getenv("API_BEARER_TOKEN"),
-        demo_access_code=os.getenv("DEMO_ACCESS_CODE"),
-        demo_session_secret=os.getenv("DEMO_SESSION_SECRET"),
     )
 
 

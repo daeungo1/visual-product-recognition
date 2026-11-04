@@ -12,14 +12,6 @@ param location string
 @secure()
 param apiBearerToken string
 
-@description('Access code exchanged for a secure mobile demo session cookie.')
-@secure()
-param demoAccessCode string
-
-@description('Dedicated signing secret for expiring demo session cookies.')
-@secure()
-param demoSessionSecret string
-
 @description('Existing Microsoft Foundry account name.')
 param foundryResourceName string = 'brk445demo-01'
 
@@ -51,8 +43,6 @@ module resources './modules/resources.bicep' = {
     location: location
     tags: tags
     apiBearerToken: apiBearerToken
-    demoAccessCode: demoAccessCode
-    demoSessionSecret: demoSessionSecret
     foundryDeploymentName: foundryDeploymentName
     foundryEndpoint: 'https://${foundryResourceName}.cognitiveservices.azure.com/'
   }

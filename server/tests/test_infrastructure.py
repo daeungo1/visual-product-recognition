@@ -22,21 +22,21 @@ def test_container_apps_environment_enables_public_network_for_mobile_api():
     assert "publicNetworkAccess: 'Enabled'" in environment_module
 
 
-def test_mobile_demo_access_code_is_injected_as_container_secret():
-    source = (
-        Path(__file__).resolve().parents[2] / "infra" / "modules" / "resources.bicep"
-    ).read_text(encoding="utf-8")
+def test_public_mobile_demo_has_no_access_code_secrets():
+    root = Path(__file__).resolve().parents[2]
+    resources = (root / "infra" / "modules" / "resources.bicep").read_text(
+        encoding="utf-8"
+    )
+    main = (root / "infra" / "main.bicep").read_text(encoding="utf-8")
+    parameters = (root / "infra" / "main.parameters.json").read_text(
+        encoding="utf-8"
+    )
 
-    assert "name: 'demo-access-code'\n        value: demoAccessCode" in source
-    assert (
-        "name: 'DEMO_ACCESS_CODE'\n            secretRef: 'demo-access-code'"
-        in source
-    )
-    assert "name: 'demo-session-secret'\n        value: demoSessionSecret" in source
-    assert (
-        "name: 'DEMO_SESSION_SECRET'\n            secretRef: 'demo-session-secret'"
-        in source
-    )
+    for source in (resources, main, parameters):
+        assert "demoAccessCode" not in source
+        assert "demoSessionSecret" not in source
+        assert "DEMO_ACCESS_CODE" not in source
+        assert "DEMO_SESSION_SECRET" not in source
 
 
 def test_reviewed_manual_is_staged_in_image_and_configured_for_runtime():

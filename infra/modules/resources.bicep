@@ -13,14 +13,6 @@ param tags object = {}
 @secure()
 param apiBearerToken string
 
-@description('Access code exchanged for a secure mobile demo session cookie.')
-@secure()
-param demoAccessCode string
-
-@description('Dedicated signing secret for expiring demo session cookies.')
-@secure()
-param demoSessionSecret string
-
 @description('Existing Foundry endpoint.')
 param foundryEndpoint string
 
@@ -128,14 +120,6 @@ module keyVault 'br/public:avm/res/key-vault/vault:0.13.0' = {
         name: 'api-bearer-token'
         value: apiBearerToken
       }
-      {
-        name: 'demo-access-code'
-        value: demoAccessCode
-      }
-      {
-        name: 'demo-session-secret'
-        value: demoSessionSecret
-      }
     ]
   }
 }
@@ -181,14 +165,6 @@ module api 'br/public:avm/res/app/container-app:0.18.0' = {
         name: 'api-bearer-token'
         value: apiBearerToken
       }
-      {
-        name: 'demo-access-code'
-        value: demoAccessCode
-      }
-      {
-        name: 'demo-session-secret'
-        value: demoSessionSecret
-      }
     ]
     ingressExternal: true
     ingressAllowInsecure: false
@@ -223,14 +199,6 @@ module api 'br/public:avm/res/app/container-app:0.18.0' = {
           {
             name: 'API_BEARER_TOKEN'
             secretRef: 'api-bearer-token'
-          }
-          {
-            name: 'DEMO_ACCESS_CODE'
-            secretRef: 'demo-access-code'
-          }
-          {
-            name: 'DEMO_SESSION_SECRET'
-            secretRef: 'demo-session-secret'
           }
           {
             name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'

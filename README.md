@@ -5,9 +5,9 @@ description: GPT 기반 모바일 제품 조작 부위 Overlay PoC
 
 ## 모바일 카메라 앱
 
-[카메라로 Visual Product Guide 테스트하기](https://azapi5ovedhtoyg74w.calmcoast-1ab8f441.swedencentral.azurecontainerapps.io/demo/login)
+[카메라로 Visual Product Guide 테스트하기](https://azapi5ovedhtoyg74w.calmcoast-1ab8f441.swedencentral.azurecontainerapps.io/demo)
 
-모바일 브라우저에서 링크를 열고 별도로 전달된 임시 접근 코드를 입력한다.
+별도 접근코드 없이 모바일 브라우저에서 링크를 열어 바로 테스트할 수 있다.
 
 ## 프로젝트 개요
 
@@ -43,6 +43,148 @@ description: GPT 기반 모바일 제품 조작 부위 Overlay PoC
 * `located`, `not_visible`, `uncertain`을 target마다 반환해 부분 성공을
   보존한다.
 * P3의 SAM 3.1과 비디오 추적은 P0~P2 평가 이후로 보류한다.
+
+## 아키텍처
+
+```mermaid
+flowchart LR
+    U[모바일 브라우저]
+    API[FastAPI Orchestrator]
+    PLANNER[GPT-6.1 Terra<br/>Issue Planner]
+    REGISTRY[Reviewed Product Registry]
+    MANUAL[Hash-verified Manuals]
+    GROUND[Target Grounder]
+    CONSENSUS[2-of-3 Consensus<br/>Adaptive Crop]
+    OVERLAY[Canvas Overlay]
+
+    U -->|제품 메모·문제·현재 상태·사진| API
+    API --> PLANNER
+    API --> REGISTRY
+    REGISTRY --> MANUAL
+    PLANNER -->|Issue Intent·Target 후보| API
+    API -->|사용자 확인 Target| GROUND
+    GROUND --> CONSENSUS
+    CONSENSUS -->|절대 픽셀 Point·Box| API
+    API --> OVERLAY
+    OVERLAY --> U
+```
+
+각 구성 요소의 책임은 분리돼 있다.
+
+| 구성 요소 | 책임 |
+|---|---|
+| 모바일 브라우저 | 카메라 촬영, 자유형 문제 입력, 제품·target 확인, Overlay 렌더링 |
+| FastAPI | 요청 검증, workflow 조정, 제품·단계 권한 검사, 보호된 `/v1` API 인증 |
+| GPT-6.1 Terra Issue Planner | 문제 의도와 최대 3개의 atomic target 제안 |
+| Reviewed Registry | 정확한 모델코드, component alias, issue-to-guide, 상태별 step 관리 |
+| Manual Asset Provider | 공식 설명서 SHA-256과 적용 모델 검증 |
+| Target Grounder | target별 독립 위치 제안, consensus, adaptive crop |
+| Azure Container Apps | 공개 HTTPS API와 모바일 웹 호스팅 |
+| Azure Container Registry | 재현 가능한 container image build와 저장 |
+| Managed Identity | Container App에서 Foundry와 Azure 리소스 접근 |
+
+GPT는 제품이나 설명서의 적용 가능성을 승인하지 않는다. 제품과 가이드
+권한은 registry와 서버가 결정하며, GPT는 문제 해석과 현재 사진의 위치
+후보 생성에만 사용한다.
+
+## 사용자 Workflow
+
+```mermaid
+flowchart TD
+    START[제품 메모·모델코드·문제 입력]
+    CAPTURE[사진 촬영 또는 선택]
+    RESOLVE[Issue Resolve]
+    STATUS{제품 상태}
+    REGISTERED[Registered<br/>Reviewed Guide]
+    CANDIDATE[Candidate<br/>제품 확인 필요]
+    UNKNOWN[Unknown<br/>Zero-shot Locate Only]
+    TARGETS[Target 최대 3개 제안]
+    CONFIRM[사용자가 제품·Target 확인]
+    GROUND[Target별 위치 탐색]
+    RESULT{Grounding 결과}
+    LOCATED[Overlay와 근거 표시]
+    RETAKE[Target별 재촬영 안내]
+
+    START --> CAPTURE --> RESOLVE --> STATUS
+    STATUS --> REGISTERED --> TARGETS
+    STATUS --> CANDIDATE --> CONFIRM
+    CONFIRM --> RESOLVE
+    STATUS --> UNKNOWN --> TARGETS
+    TARGETS --> CONFIRM --> GROUND --> RESULT
+    RESULT -->|located| LOCATED
+    RESULT -->|uncertain 또는 not_visible| RETAKE
+```
+
+### 1단계: Issue Resolve
+
+`POST /v1/issues/resolve`는 자연어 문제를 분석하지만 좌표를 생성하지 않는다.
+
+1. 사용자의 제품 메모, 모델코드, 문제와 현재 상태를 받는다.
+2. 문제를 최대 3개의 독립 target으로 분리한다.
+3. exact model, 제품 후보 또는 미등록 제품 상태를 결정한다.
+4. 등록 제품의 target을 reviewed component alias에 매핑한다.
+5. 사용자가 확인할 제품 후보, target과 지원 모드를 반환한다.
+
+제품 상태별 동작은 다음과 같다.
+
+| 제품 상태 | 지원 모드 | 동작 |
+|---|---|---|
+| `registered` | `reviewed_guide` | exact model과 공식 설명서를 검증하고 근거 있는 guide 후보 제공 |
+| `candidate` | `zero_shot_locate_only` | 사용자가 exact model을 확인하기 전까지 공식 절차 차단 |
+| `unknown` | `zero_shot_locate_only` | 보이는 target 위치만 탐색하고 모델 라벨·설명서 요청 |
+
+### 2단계: Issue Ground
+
+`POST /v1/issues/ground`는 사용자가 확인한 target을 사진에서 독립적으로
+찾는다.
+
+```text
+Target
+  -> 전체 이미지에서 GPT 제안 3회
+  -> 두 개 이상 공간 합의
+  -> located이면 절대 픽셀 Point·Box 반환
+  -> uncertain이면 검수된 상대 영역을 원본 픽셀로 Crop
+  -> Crop에서 한 번만 3회 재분석
+  -> 원본 이미지 좌표로 변환
+  -> 실패하면 Target별 재촬영 안내
+```
+
+한 target의 provider 오류나 위치 실패가 다른 target의 성공 결과를
+지우지 않는다. 다만 Foundry 장애는 시각적 `uncertain`으로 숨기지 않고
+HTTP 503과 이미 완료된 target 결과로 반환한다.
+
+### 권한과 신뢰 경계
+
+* Issue Resolution 전체를 HMAC으로 서명해 client가 canonical name,
+  alias, 상대 위치, registry ID와 설명서 근거를 변조하지 못하게 한다.
+* target 이름 수정은 화면 표시명만 변경한다.
+* 새 target은 client가 metadata를 만들지 않고 Issue Planner로 다시
+  분석한다.
+* reviewed instruction은 exact model, manual hash, issue intent, 현재 상태,
+  guide와 step이 모두 일치할 때만 반환한다.
+* zero-shot target에는 공식 조작 instruction을 표시하지 않는다.
+
+## 배포 구조
+
+```mermaid
+flowchart TB
+    PHONE[Mobile Browser]
+    ACA[Azure Container Apps<br/>FastAPI + Mobile Web]
+    ACR[Azure Container Registry]
+    ID[User-assigned Managed Identity]
+    FOUNDRY[Microsoft Foundry<br/>GPT-6.1 Terra]
+    MONITOR[Application Insights<br/>Log Analytics]
+
+    PHONE -->|HTTPS| ACA
+    ACR -->|Container Image| ACA
+    ACA --> ID
+    ID --> FOUNDRY
+    ACA --> MONITOR
+```
+
+현재 배포는 Sweden Central의 Container Apps를 사용한다. P3에서 SAM 3.1
+GPU inference를 추가할 때는 Sweden Central에 고정하지 않고 quota가 있는
+Azure region을 선택한다.
 
 ## 문서
 

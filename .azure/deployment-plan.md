@@ -277,6 +277,36 @@ Container App revision `azapi5ovedhtoyg74w--0000011` is Healthy and receives
 100% traffic. The free-form mobile page, legacy reviewed routes and both hybrid
 support modes were verified against the deployed HTTPS endpoint.
 
+### Public demo UI revalidation
+
+Validation run: 2026-11-04, Sweden Central, subscription
+`2cf925b6-80cb-4567-abda-5ccd3010aab5`.
+
+| Check | Result |
+|---|---|
+| Python tests | PASS, 120 tests |
+| Python lint | PASS |
+| Bicep build | PASS |
+| ARM validation | PASS |
+| ARM what-if | PASS, no resource deletes |
+| Demo authentication | Removed from `/demo` and `/demo/*` |
+| Protected API authentication | `/v1/*` bearer authentication preserved |
+| Mobile viewport | 375px viewport, no horizontal overflow |
+| UI hierarchy | Three steps, 50px primary actions, teal visual theme |
+
+The update removes access-code and demo-session secrets from the declared
+Container App configuration. `API_BEARER_TOKEN` remains the signing fallback
+for trusted issue-resolution metadata and protects the `/v1` API.
+
+ACR remote build `dt8` produced `visual-guide-api:20261104-public-ui` with
+digest
+`sha256:f924516d8a24752321a75bde4241fe909865f1f8be22d6dfe62ede82a97209b9`.
+Container App revision `azapi5ovedhtoyg74w--0000012` is Healthy and receives
+100% traffic. The deployed configuration contains only the
+`api-bearer-token` secret. Public `/demo/issues/resolve` and
+`/demo/issues/ground` requests returned HTTP 200 without a cookie or access
+code, and the registered smoke case located both targets.
+
 ## Role Assignment Verification
 
 * Status: Verified statically.
@@ -297,8 +327,8 @@ resource scopes.
 
 * API and mobile demo origin:
   `https://azapi5ovedhtoyg74w.calmcoast-1ab8f441.swedencentral.azurecontainerapps.io`
-* Mobile login:
-  `https://azapi5ovedhtoyg74w.calmcoast-1ab8f441.swedencentral.azurecontainerapps.io/demo/login`
+* Public mobile demo:
+  `https://azapi5ovedhtoyg74w.calmcoast-1ab8f441.swedencentral.azurecontainerapps.io/demo`
 
 ## 9. Files to Generate
 
