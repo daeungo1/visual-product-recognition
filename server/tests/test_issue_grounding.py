@@ -20,6 +20,7 @@ from visual_guide.issue_contracts import (
     TargetSource,
 )
 from visual_guide.issue_grounding import IssueGroundingService
+from visual_guide.issue_service import ResolutionSigner
 from visual_guide.registry import (
     ComponentSpec,
     GuideStep,
@@ -119,18 +120,21 @@ def _candidate():
 
 
 def _registered_resolution():
-    return IssueResolution(
+    resolution = IssueResolution(
         product_status=ProductStatus.REGISTERED,
         support_mode=SupportMode.REVIEWED_GUIDE,
         product_candidates=(_candidate(),),
         issue_intent="detergent_loading",
+        normalized_state="front_visible",
         targets=(_registry_target(), _zero_target()),
         guide_candidates=(),
         requires_product_confirmation=False,
         requires_target_confirmation=True,
         next_capture_instruction="제품 전면을 촬영하세요.",
         truncation_reason=None,
+        resolution_token=None,
     )
+    return ResolutionSigner("test-resolution-secret").attach(resolution)
 
 
 class FakeRegistry:
@@ -169,6 +173,25 @@ class FakeRegistry:
             return self.component
         raise LookupError(component_id)
 
+    def eligible_step(
+        self,
+        *,
+        product_id,
+        issue_intent,
+        current_state,
+        guide_id,
+        step_id,
+    ):
+        if (
+            product_id == "product-a"
+            and issue_intent == "detergent_loading"
+            and current_state == "front_visible"
+            and guide_id == "detergent-guide"
+            and step_id == "locate-parts"
+        ):
+            return _guide().steps[0]
+        raise LookupError("ineligible step")
+
 
 class FakeManualProvider:
     def resolve(self, _manual):
@@ -203,6 +226,7 @@ def test_registered_grounding_preserves_mixed_target_authority():
         registry=FakeRegistry(),
         manual_provider=FakeManualProvider(),
         target_grounder=grounder,
+        signer=ResolutionSigner("test-resolution-secret"),
     )
     resolution = _registered_resolution()
     request = IssueGroundingRequest(
@@ -228,17 +252,21 @@ def test_registered_grounding_preserves_mixed_target_authority():
 
 
 def test_candidate_product_cannot_enter_grounding_before_confirmation():
-    resolution = _registered_resolution().model_copy(
-        update={
-            "product_status": ProductStatus.CANDIDATE,
-            "support_mode": SupportMode.ZERO_SHOT_LOCATE_ONLY,
-            "requires_product_confirmation": True,
-        }
+    resolution = ResolutionSigner("test-resolution-secret").attach(
+        _registered_resolution().model_copy(
+            update={
+                "product_status": ProductStatus.CANDIDATE,
+                "support_mode": SupportMode.ZERO_SHOT_LOCATE_ONLY,
+                "requires_product_confirmation": True,
+                "resolution_token": None,
+            }
+        )
     )
     service = IssueGroundingService(
         registry=FakeRegistry(),
         manual_provider=FakeManualProvider(),
         target_grounder=FakeTargetGrounder(),
+        signer=ResolutionSigner("test-resolution-secret"),
     )
     request = IssueGroundingRequest(
         resolution=resolution,
@@ -259,6 +287,7 @@ def test_registered_grounding_revalidates_exact_model():
         registry=FakeRegistry(),
         manual_provider=FakeManualProvider(),
         target_grounder=FakeTargetGrounder(),
+        signer=ResolutionSigner("test-resolution-secret"),
     )
     request = IssueGroundingRequest(
         resolution=resolution,
@@ -280,17 +309,21 @@ def test_unknown_product_grounds_zero_shot_without_instruction():
         support_mode=SupportMode.ZERO_SHOT_LOCATE_ONLY,
         product_candidates=(),
         issue_intent="locate_display",
+        normalized_state=None,
         targets=(target,),
         guide_candidates=(),
         requires_product_confirmation=False,
         requires_target_confirmation=True,
         next_capture_instruction="모델 라벨을 촬영하세요.",
         truncation_reason=None,
+        resolution_token=None,
     )
+    resolution = ResolutionSigner("test-resolution-secret").attach(resolution)
     service = IssueGroundingService(
         registry=FakeRegistry(),
         manual_provider=FakeManualProvider(),
         target_grounder=FakeTargetGrounder(),
+        signer=ResolutionSigner("test-resolution-secret"),
     )
     request = IssueGroundingRequest(
         resolution=resolution,
@@ -306,3 +339,52 @@ def test_unknown_product_grounds_zero_shot_without_instruction():
     assert response.support_mode is SupportMode.ZERO_SHOT_LOCATE_ONLY
     assert response.targets[0].instruction is None
     assert response.product_id is None
+
+
+def test_grounding_rejects_tampered_zero_shot_metadata():
+    resolution = _registered_resolution()
+    tampered = resolution.targets[1].model_copy(
+        update={
+            "canonical_name": "tampered target",
+            "aliases": ("evil",),
+            "relative_region": "lower_front",
+        }
+    )
+    service = IssueGroundingService(
+        registry=FakeRegistry(),
+        manual_provider=FakeManualProvider(),
+        target_grounder=FakeTargetGrounder(),
+        signer=ResolutionSigner("test-resolution-secret"),
+    )
+    request = IssueGroundingRequest(
+        resolution=resolution,
+        confirmed_product_id="product-a",
+        confirmed_model_code="MODEL-A",
+        confirmed_guide_id="detergent-guide",
+        confirmed_step_id="locate-parts",
+        confirmed_targets=(resolution.targets[0], tampered),
+    )
+
+    with pytest.raises(ValueError, match="metadata"):
+        service.ground(request, _image())
+
+
+def test_grounding_rejects_step_outside_issue_state_mapping():
+    resolution = _registered_resolution()
+    service = IssueGroundingService(
+        registry=FakeRegistry(),
+        manual_provider=FakeManualProvider(),
+        target_grounder=FakeTargetGrounder(),
+        signer=ResolutionSigner("test-resolution-secret"),
+    )
+    request = IssueGroundingRequest(
+        resolution=resolution,
+        confirmed_product_id="product-a",
+        confirmed_model_code="MODEL-A",
+        confirmed_guide_id="detergent-guide",
+        confirmed_step_id="open-detergent-dispenser",
+        confirmed_targets=(resolution.targets[0],),
+    )
+
+    with pytest.raises(ValueError, match="eligible"):
+        service.ground(request, _image())

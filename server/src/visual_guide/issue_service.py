@@ -1,5 +1,9 @@
 """Compose untrusted issue plans with deterministic registry authority."""
 
+import hashlib
+import hmac
+import json
+
 from visual_guide.issue_contracts import (
     DynamicTargetSpec,
     GuideCandidate,
@@ -12,12 +16,55 @@ from visual_guide.issue_contracts import (
 from visual_guide.product_resolver import ProductResolution, resolve_product
 
 
+class ResolutionSigner:
+    """Sign and verify immutable issue-resolution authority."""
+
+    def __init__(self, secret: str):
+        if len(secret) < 16:
+            raise ValueError("resolution signing secret must be at least 16 characters")
+        self.secret = secret.encode()
+
+    @staticmethod
+    def _payload(resolution: IssueResolution) -> bytes:
+        return json.dumps(
+            resolution.model_dump(
+                mode="json",
+                exclude={"resolution_token"},
+            ),
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+
+    def attach(self, resolution: IssueResolution) -> IssueResolution:
+        """Return the resolution with a signature over all trusted fields."""
+        signature = hmac.new(
+            self.secret,
+            self._payload(resolution),
+            hashlib.sha256,
+        ).hexdigest()
+        return resolution.model_copy(update={"resolution_token": signature})
+
+    def verify(self, resolution: IssueResolution) -> None:
+        """Reject a missing or altered resolution signature."""
+        if not resolution.resolution_token:
+            raise ValueError("Issue resolution token is required.")
+        expected = hmac.new(
+            self.secret,
+            self._payload(resolution),
+            hashlib.sha256,
+        ).hexdigest()
+        if not hmac.compare_digest(resolution.resolution_token, expected):
+            raise ValueError("Issue resolution metadata was modified.")
+
+
 class IssueResolutionService:
     """Resolve products, intents and targets before visual grounding."""
 
-    def __init__(self, *, planner, registry):
+    def __init__(self, *, planner, registry, signer: ResolutionSigner):
         self.planner = planner
         self.registry = registry
+        self.signer = signer
 
     def _map_target(
         self,
@@ -75,16 +122,17 @@ class IssueResolutionService:
         )
 
     @staticmethod
-    def _guide_candidate(guide) -> GuideCandidate:
+    def _guide_candidate(guide, step_ids: tuple[str, ...]) -> GuideCandidate:
         references = tuple(
             f"{step.source_manual_id}:page:{step.source_page}"
             for step in guide.steps
+            if step.step_id in step_ids
         )
         return GuideCandidate(
             guide_id=guide.guide_id,
             title=guide.title,
             applicability="exact",
-            step_ids=tuple(step.step_id for step in guide.steps),
+            step_ids=step_ids,
             source_references=references,
         )
 
@@ -116,7 +164,18 @@ class IssueResolutionService:
                 issue_intent=planned.issue_intent,
                 current_state=planned.normalized_state,
             )
-            guides = tuple(self._guide_candidate(guide) for guide in reviewed)
+            guides = tuple(
+                self._guide_candidate(
+                    guide,
+                    self.registry.eligible_step_ids(
+                        product_id=product.confirmed_product_id,
+                        issue_intent=planned.issue_intent,
+                        current_state=planned.normalized_state,
+                        guide_id=guide.guide_id,
+                    ),
+                )
+                for guide in reviewed
+            )
         if product.status is ProductStatus.REGISTERED and guides:
             next_capture = "확인한 대상이 보이도록 제품 전면을 촬영하세요."
         elif product.status is ProductStatus.REGISTERED:
@@ -125,7 +184,7 @@ class IssueResolutionService:
             next_capture = "정확한 제품 모델을 선택한 뒤 대상을 확인하세요."
         else:
             next_capture = "제품 모델 라벨을 촬영하거나 공식 설명서를 제공하세요."
-        return IssueResolution(
+        resolution = IssueResolution(
             product_status=product.status,
             support_mode=(
                 SupportMode.REVIEWED_GUIDE
@@ -134,13 +193,16 @@ class IssueResolutionService:
             ),
             product_candidates=product.candidates,
             issue_intent=planned.issue_intent,
+            normalized_state=planned.normalized_state,
             targets=targets,
             guide_candidates=guides,
             requires_product_confirmation=product.requires_confirmation,
             requires_target_confirmation=True,
             next_capture_instruction=next_capture,
             truncation_reason=planned.truncation_reason,
+            resolution_token=None,
         )
+        return self.signer.attach(resolution)
 
     def confirm_targets(
         self,

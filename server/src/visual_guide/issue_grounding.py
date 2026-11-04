@@ -8,17 +8,40 @@ from visual_guide.issue_contracts import (
     ProductStatus,
     TargetSource,
 )
-from visual_guide.orchestrator import TargetGroundingContext
+from visual_guide.issue_service import ResolutionSigner
+from visual_guide.orchestrator import PROVIDER_ERRORS, TargetGroundingContext
 from visual_guide.registry import ComponentSpec
+
+
+class IssueGroundingProviderError(RuntimeError):
+    """Provider failure with completed hybrid target outcomes."""
+
+    def __init__(
+        self,
+        *,
+        failed_target_id: str,
+        completed_targets: tuple[GroundedIssueTarget, ...],
+    ):
+        super().__init__(f"Issue grounding provider failed: {failed_target_id}")
+        self.failed_target_id = failed_target_id
+        self.completed_targets = completed_targets
 
 
 class IssueGroundingService:
     """Revalidate product authority and ground confirmed dynamic targets."""
 
-    def __init__(self, *, registry, manual_provider, target_grounder):
+    def __init__(
+        self,
+        *,
+        registry,
+        manual_provider,
+        target_grounder,
+        signer: ResolutionSigner,
+    ):
         self.registry = registry
         self.manual_provider = manual_provider
         self.target_grounder = target_grounder
+        self.signer = signer
 
     def _resolve_registered(self, request: IssueGroundingRequest):
         try:
@@ -32,16 +55,18 @@ class IssueGroundingService:
         if not request.confirmed_guide_id or not request.confirmed_step_id:
             raise ValueError("Reviewed targets require a confirmed guide and step.")
         guide = self.registry.guide(product.product_id, request.confirmed_guide_id)
-        step = next(
-            (
-                item
-                for item in guide.steps
-                if item.step_id == request.confirmed_step_id
-            ),
-            None,
-        )
-        if step is None:
-            raise ValueError("Confirmed step is not part of the reviewed guide.")
+        try:
+            step = self.registry.eligible_step(
+                product_id=product.product_id,
+                issue_intent=request.resolution.issue_intent,
+                current_state=request.resolution.normalized_state,
+                guide_id=guide.guide_id,
+                step_id=request.confirmed_step_id,
+            )
+        except LookupError as error:
+            raise ValueError(
+                "Confirmed step is not eligible for the issue state."
+            ) from error
         manual = self.registry.manual_asset(product.product_id, step.source_manual_id)
         path = self.manual_provider.resolve(manual)
         resolved = self.registry.resolve_guide(
@@ -53,14 +78,30 @@ class IssueGroundingService:
 
     def ground(self, request: IssueGroundingRequest, image) -> IssueGroundingResponse:
         """Ground all confirmed targets while preserving target-level authority."""
+        self.signer.verify(request.resolution)
         if request.resolution.product_status is ProductStatus.CANDIDATE:
             raise ValueError("Product confirmation is required before grounding.")
         product = guide = reviewed_step = None
         if request.resolution.product_status is ProductStatus.REGISTERED:
             product, guide, reviewed_step = self._resolve_registered(request)
 
-        results = []
-        for target in request.confirmed_targets:
+        trusted_by_id = {
+            target.target_id: target for target in request.resolution.targets
+        }
+        trusted_targets = []
+        for submitted in request.confirmed_targets:
+            original = trusted_by_id.get(submitted.target_id)
+            if original is None:
+                raise ValueError("Confirmed target was not part of the resolution.")
+            trusted = original.model_copy(
+                update={"display_name": submitted.display_name}
+            )
+            if submitted != trusted:
+                raise ValueError("Confirmed target metadata was modified.")
+            trusted_targets.append(trusted)
+
+        results: list[GroundedIssueTarget] = []
+        for target in trusted_targets:
             if target.source is TargetSource.REGISTRY:
                 if product is None or reviewed_step is None:
                     raise ValueError("Registry target requires exact product confirmation.")
@@ -87,12 +128,18 @@ class IssueGroundingService:
                     instruction=f"Locate only the user-requested {target.display_name}.",
                     source_evidence="No reviewed manual evidence.",
                 )
-            grounding = self.target_grounder.ground(
-                target_id=target.target_id,
-                component=component,
-                step=context,
-                image=image,
-            )
+            try:
+                grounding = self.target_grounder.ground(
+                    target_id=target.target_id,
+                    component=component,
+                    step=context,
+                    image=image,
+                )
+            except PROVIDER_ERRORS as error:
+                raise IssueGroundingProviderError(
+                    failed_target_id=target.target_id,
+                    completed_targets=tuple(results),
+                ) from error
             results.append(
                 GroundedIssueTarget(
                     target=target,

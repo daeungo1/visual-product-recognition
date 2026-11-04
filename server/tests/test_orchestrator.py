@@ -1,6 +1,8 @@
 from io import BytesIO
 from pathlib import Path
 
+import pytest
+from openai import OpenAIError
 from PIL import Image
 
 from visual_guide.contracts import (
@@ -11,7 +13,7 @@ from visual_guide.contracts import (
     RegionStatus,
 )
 from visual_guide.images import decode_image
-from visual_guide.orchestrator import GuideGroundingService
+from visual_guide.orchestrator import GroundingProviderError, GuideGroundingService
 from visual_guide.registry import (
     ComponentSpec,
     GuideStep,
@@ -218,21 +220,22 @@ def test_not_visible_consensus_is_not_retried():
     assert len(gateway.calls) == 3
 
 
-def test_failure_in_one_target_preserves_prior_target_success():
-    gateway = QueueGateway([RegionStatus.LOCATED] * 3 + [ValueError("bad response")])
+def test_provider_failure_reports_prior_target_success():
+    gateway = QueueGateway(
+        [RegionStatus.LOCATED] * 3 + [OpenAIError("provider unavailable")]
+    )
     service = GuideGroundingService(
         registry=FakeRegistry(),
         gateway=gateway,
         manual_paths={"WD80H25BHS": Path("manual.pdf")},
     )
 
-    response = service.ground(
-        _request("control_panel", "detergent_dispenser"),
-        _image(),
-    )
+    with pytest.raises(GroundingProviderError) as captured:
+        service.ground(
+            _request("control_panel", "detergent_dispenser"),
+            _image(),
+        )
 
-    assert response.targets[0].status is RegionStatus.LOCATED
-    assert response.targets[1].status is RegionStatus.UNCERTAIN
-    assert response.targets[1].attempts == 1
-    assert response.partial_success is True
+    assert captured.value.failed_target_id == "detergent_dispenser"
+    assert captured.value.completed_targets[0].status is RegionStatus.LOCATED
     assert len(gateway.calls) == 4

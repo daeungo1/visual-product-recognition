@@ -11,8 +11,7 @@
     ],
     "guide_id": "detergent-and-controls",
     "eligible_step_ids": [
-      "locate-detergent-and-controls",
-      "open-detergent-dispenser"
+      "locate-detergent-and-controls"
     ],
     "required_component_ids": [
       "detergent_dispenser"
@@ -20,6 +19,24 @@
     "optional_component_ids": [
       "control_panel"
     ]
+  },
+  {
+    "issue_intent": "open_detergent_dispenser",
+    "aliases": [
+      "세제함 열기",
+      "세제함을 어떻게 열어"
+    ],
+    "required_states": [
+      "targets_confirmed"
+    ],
+    "guide_id": "detergent-and-controls",
+    "eligible_step_ids": [
+      "open-detergent-dispenser"
+    ],
+    "required_component_ids": [
+      "detergent_dispenser"
+    ],
+    "optional_component_ids": []
   },
   {
     "issue_intent": "control_operation",

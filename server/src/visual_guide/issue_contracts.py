@@ -128,12 +128,14 @@ class IssueResolution(StrictModel):
     support_mode: SupportMode
     product_candidates: tuple[ProductCandidate, ...] = Field(max_length=5)
     issue_intent: str = Field(min_length=1, max_length=128)
+    normalized_state: str | None = Field(default=None, max_length=128)
     targets: tuple[DynamicTargetSpec, ...] = Field(min_length=1, max_length=3)
     guide_candidates: tuple[GuideCandidate, ...] = Field(max_length=5)
     requires_product_confirmation: bool
     requires_target_confirmation: bool
     next_capture_instruction: str = Field(min_length=1, max_length=500)
     truncation_reason: str | None = Field(default=None, max_length=500)
+    resolution_token: str | None = Field(default=None, max_length=128)
 
     @model_validator(mode="after")
     def product_and_targets_are_consistent(self) -> "IssueResolution":

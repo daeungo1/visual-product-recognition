@@ -24,7 +24,22 @@ RETAKE_INSTRUCTIONS = {
     "lower_front": "제품 전면 하단 전체를 정면에서 가까이 촬영하세요.",
     "full_front": "제품 전면 전체가 잘리지 않도록 정면에서 다시 촬영하세요.",
 }
-MODEL_PROPOSAL_ERRORS = (OpenAIError, ValueError, TimeoutError, ConnectionError)
+PROVIDER_ERRORS = (OpenAIError, TimeoutError, ConnectionError)
+VISUAL_PROPOSAL_ERRORS = (ValueError,)
+
+
+class GroundingProviderError(RuntimeError):
+    """Provider failure with completed independent target outcomes."""
+
+    def __init__(
+        self,
+        *,
+        failed_target_id: str,
+        completed_targets: tuple[GroundedTarget, ...],
+    ):
+        super().__init__(f"Grounding provider failed for target: {failed_target_id}")
+        self.failed_target_id = failed_target_id
+        self.completed_targets = completed_targets
 
 
 @dataclass(frozen=True)
@@ -106,7 +121,7 @@ class TargetGrounder:
                     crop_retry=False,
                 )
             )
-        except MODEL_PROPOSAL_ERRORS as error:
+        except VISUAL_PROPOSAL_ERRORS as error:
             decision = RegionProposal(
                 status=RegionStatus.UNCERTAIN,
                 step_id=step.step_id,
@@ -136,7 +151,7 @@ class TargetGrounder:
                     )
                 )
                 decision = remap_proposal(crop_decision, cropped)
-            except MODEL_PROPOSAL_ERRORS:
+            except VISUAL_PROPOSAL_ERRORS:
                 pass
             attempts = 2
         return self._target(
@@ -191,8 +206,8 @@ class GuideGroundingService:
         grounded: list[GroundedTarget] = []
         for target_id in request.target_ids:
             component = resolved.components[target_id]
-            grounded.append(
-                self.target_grounder.ground(
+            try:
+                target = self.target_grounder.ground(
                     target_id=target_id,
                     component=component,
                     step=TargetGroundingContext(
@@ -202,7 +217,12 @@ class GuideGroundingService:
                     ),
                     image=image,
                 )
-            )
+            except PROVIDER_ERRORS as error:
+                raise GroundingProviderError(
+                    failed_target_id=target_id,
+                    completed_targets=tuple(grounded),
+                ) from error
+            grounded.append(target)
         located = sum(target.status is RegionStatus.LOCATED for target in grounded)
         return MultiTargetRegionResponse(
             product_id=resolved.product.product_id,

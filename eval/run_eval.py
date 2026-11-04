@@ -19,7 +19,7 @@ from visual_guide.issue_contracts import (
     SupportMode,
 )
 from visual_guide.issue_planner import FoundryIssuePlanner
-from visual_guide.issue_service import IssueResolutionService
+from visual_guide.issue_service import IssueResolutionService, ResolutionSigner
 from visual_guide.model_gateway import build_foundry_gateway
 from visual_guide.orchestrator import GuideGroundingService
 from visual_guide.registry import load_reviewed_registry
@@ -100,6 +100,7 @@ def main() -> int:
                     deployment=args.deployment,
                 ),
                 registry=registry,
+                signer=ResolutionSigner("local-evaluation-resolution-secret"),
             ),
             output=args.output,
             deployment=args.deployment,

@@ -27,6 +27,7 @@ from visual_guide.issue_contracts import (
     SupportMode,
     TargetSource,
 )
+from visual_guide.issue_grounding import IssueGroundingProviderError
 from visual_guide.main import create_app
 
 
@@ -167,6 +168,30 @@ class FakeIssueGroundingService:
                 ),
             ),
             partial_success=False,
+        )
+
+
+class FailingIssueGroundingService:
+    def ground(self, request, image):
+        target = request.confirmed_targets[0]
+        completed = GroundedIssueTarget(
+            target=target,
+            grounding=GroundedTarget(
+                target_id=target.target_id,
+                component=target.canonical_name,
+                status=RegionStatus.LOCATED,
+                point=PixelPoint(x=50, y=40),
+                box=PixelBox(x1=10, y1=10, x2=90, y2=70),
+                evidence="visible",
+                attempts=1,
+                retake_instruction=None,
+            ),
+            instruction="세제함 위치를 확인하세요.",
+            source_reference="manual:page:22",
+        )
+        raise IssueGroundingProviderError(
+            failed_target_id="second-target",
+            completed_targets=(completed,),
         )
 
 
@@ -686,3 +711,38 @@ def test_issue_endpoints_return_503_when_services_are_unavailable():
     )
 
     assert response.status_code == 503
+
+
+def test_issue_grounding_provider_failure_returns_completed_targets():
+    resolution = _issue_resolution()
+    client = TestClient(
+        create_app(
+            model_gateway=FakeGateway(),
+            issue_grounding_service=FailingIssueGroundingService(),
+            bearer_token="expected-token",
+        )
+    )
+
+    response = client.post(
+        "/v1/issues/ground",
+        headers={"Authorization": "Bearer " + "expected-token"},
+        json={
+            "request": {
+                "resolution": resolution.model_dump(mode="json"),
+                "confirmed_product_id": "samsung-wd80h25bhs",
+                "confirmed_model_code": "WD80H25BHS",
+                "confirmed_guide_id": "detergent-and-controls",
+                "confirmed_step_id": "locate-detergent-and-controls",
+                "confirmed_targets": [
+                    target.model_dump(mode="json") for target in resolution.targets
+                ],
+            },
+            "image_mime": "image/png",
+            "image_base64": encoded_png(),
+        },
+    )
+
+    assert response.status_code == 503
+    detail = response.json()["detail"]
+    assert detail["failed_target_id"] == "second-target"
+    assert detail["completed_targets"][0]["grounding"]["status"] == "located"

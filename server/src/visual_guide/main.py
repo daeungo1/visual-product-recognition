@@ -30,12 +30,19 @@ from visual_guide.issue_contracts import (
     IssueResolution,
     IssueResolutionRequest,
 )
-from visual_guide.issue_grounding import IssueGroundingService
+from visual_guide.issue_grounding import (
+    IssueGroundingProviderError,
+    IssueGroundingService,
+)
 from visual_guide.issue_planner import FoundryIssuePlanner
-from visual_guide.issue_service import IssueResolutionService
+from visual_guide.issue_service import IssueResolutionService, ResolutionSigner
 from visual_guide.manual_assets import ManualAssetProvider
 from visual_guide.model_gateway import RegionRequest, build_foundry_gateway
-from visual_guide.orchestrator import GuideGroundingService, TargetGrounder
+from visual_guide.orchestrator import (
+    GroundingProviderError,
+    GuideGroundingService,
+    TargetGrounder,
+)
 from visual_guide.registry import load_reviewed_registry
 
 
@@ -217,6 +224,18 @@ def create_app(
                 ),
                 image,
             )
+        except GroundingProviderError as error:
+            raise HTTPException(
+                503,
+                {
+                    "message": "Grounding provider unavailable.",
+                    "failed_target_id": error.failed_target_id,
+                    "completed_targets": [
+                        target.model_dump(mode="json")
+                        for target in error.completed_targets
+                    ],
+                },
+            ) from error
         except ValueError as error:
             raise HTTPException(422, str(error)) from error
 
@@ -249,6 +268,18 @@ def create_app(
         image = decode_body_image(body.image_mime, body.image_base64)
         try:
             return issue_grounding_service.ground(body.request, image)
+        except IssueGroundingProviderError as error:
+            raise HTTPException(
+                503,
+                {
+                    "message": "Issue grounding provider unavailable.",
+                    "failed_target_id": error.failed_target_id,
+                    "completed_targets": [
+                        target.model_dump(mode="json")
+                        for target in error.completed_targets
+                    ],
+                },
+            ) from error
         except (LookupError, ValueError) as error:
             raise HTTPException(422, str(error)) from error
         except (OpenAIError, TimeoutError, ConnectionError, RuntimeError) as error:
@@ -367,9 +398,13 @@ def create_configured_app() -> FastAPI:
     grounding_service = None
     issue_resolution_service = None
     issue_grounding_service = None
-    if gateway is not None and manual_path:
+    resolution_secret = os.getenv("ISSUE_RESOLUTION_SECRET") or os.getenv(
+        "DEMO_SESSION_SECRET"
+    )
+    if gateway is not None and manual_path and resolution_secret:
         registry = load_reviewed_registry(Path(__file__).parent / "references")
         manual_provider = ManualAssetProvider(Path(manual_path).parent)
+        signer = ResolutionSigner(resolution_secret)
         grounding_service = GuideGroundingService(
             registry=registry,
             gateway=gateway,
@@ -381,11 +416,13 @@ def create_configured_app() -> FastAPI:
                 deployment=deployment,
             ),
             registry=registry,
+            signer=signer,
         )
         issue_grounding_service = IssueGroundingService(
             registry=registry,
             manual_provider=manual_provider,
             target_grounder=TargetGrounder(gateway),
+            signer=signer,
         )
     return create_app(
         model_gateway=gateway,

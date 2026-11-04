@@ -9,7 +9,7 @@ from visual_guide.issue_contracts import (
     TargetSource,
 )
 from visual_guide.issue_planner import PlannedIssue, PlannedTarget
-from visual_guide.issue_service import IssueResolutionService
+from visual_guide.issue_service import IssueResolutionService, ResolutionSigner
 from visual_guide.registry import load_reviewed_registry
 
 
@@ -76,6 +76,7 @@ def test_registered_issue_maps_reviewed_and_zero_shot_targets():
     service = IssueResolutionService(
         planner=QueuePlanner(_planned()),
         registry=_registry(),
+        signer=ResolutionSigner("test-resolution-secret"),
     )
 
     resolution = service.resolve(_request(), image=None)
@@ -91,12 +92,14 @@ def test_registered_issue_maps_reviewed_and_zero_shot_targets():
     assert [guide.guide_id for guide in resolution.guide_candidates] == [
         "detergent-and-controls"
     ]
+    assert resolution.resolution_token
 
 
 def test_product_hint_candidate_requires_confirmation_and_no_reviewed_target():
     service = IssueResolutionService(
         planner=QueuePlanner(_planned()),
         registry=_registry(),
+        signer=ResolutionSigner("test-resolution-secret"),
     )
 
     resolution = service.resolve(
@@ -114,6 +117,7 @@ def test_unknown_product_stays_zero_shot_locate_only():
     service = IssueResolutionService(
         planner=QueuePlanner(_planned(category=None)),
         registry=_registry(),
+        signer=ResolutionSigner("test-resolution-secret"),
     )
 
     resolution = service.resolve(
@@ -131,6 +135,7 @@ def test_registered_unknown_state_returns_no_guide_candidate():
     service = IssueResolutionService(
         planner=QueuePlanner(_planned(state="door_open")),
         registry=_registry(),
+        signer=ResolutionSigner("test-resolution-secret"),
     )
 
     resolution = service.resolve(_request(), image=None)
@@ -144,6 +149,7 @@ def test_target_rename_changes_display_only():
     service = IssueResolutionService(
         planner=QueuePlanner(_planned()),
         registry=_registry(),
+        signer=ResolutionSigner("test-resolution-secret"),
     )
     resolution = service.resolve(_request(), image=None)
     original = resolution.targets[0]
@@ -177,7 +183,11 @@ def test_added_target_is_replanned_instead_of_trusted():
         truncation_reason=None,
     )
     planner = QueuePlanner(_planned(targets=(_planned().targets[0],)), added)
-    service = IssueResolutionService(planner=planner, registry=_registry())
+    service = IssueResolutionService(
+        planner=planner,
+        registry=_registry(),
+        signer=ResolutionSigner("test-resolution-secret"),
+    )
     request = _request()
     resolution = service.resolve(request, image=None)
 
@@ -198,7 +208,36 @@ def test_planner_failure_is_not_converted_to_unknown_product():
     service = IssueResolutionService(
         planner=QueuePlanner(RuntimeError("planner unavailable")),
         registry=_registry(),
+        signer=ResolutionSigner("test-resolution-secret"),
     )
 
     with pytest.raises(RuntimeError, match="planner unavailable"):
         service.resolve(_request(), image=None)
+
+
+def test_issue_resolution_exposes_only_state_eligible_steps():
+    planned = _planned(
+        intent="control_operation",
+        state="front_visible",
+        targets=(
+            PlannedTarget(
+                display_name="조작부",
+                canonical_name="조작부",
+                aliases=("조작부",),
+                purpose="locate",
+                relative_region="upper_center",
+            ),
+        ),
+    )
+    service = IssueResolutionService(
+        planner=QueuePlanner(planned),
+        registry=_registry(),
+        signer=ResolutionSigner("test-resolution-secret"),
+    )
+
+    resolution = service.resolve(_request(), image=None)
+
+    assert resolution.normalized_state == "front_visible"
+    assert resolution.guide_candidates[0].step_ids == (
+        "locate-detergent-and-controls",
+    )

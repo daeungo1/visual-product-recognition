@@ -231,6 +231,53 @@ class ReviewedRegistry:
             if (product_id, guide_id) in self._guides
         )
 
+    def eligible_step_ids(
+        self,
+        *,
+        product_id: str,
+        issue_intent: str,
+        current_state: str | None,
+        guide_id: str,
+    ) -> tuple[str, ...]:
+        """Return state-gated step IDs from the reviewed issue mapping."""
+        normalized_intent = self._normalize(issue_intent)
+        normalized_state = self._normalize(current_state or "")
+        for mapping in self._issue_mappings.get(product_id, ()):
+            intents = (mapping.issue_intent, *mapping.aliases)
+            if normalized_intent not in {self._normalize(value) for value in intents}:
+                continue
+            if normalized_state not in {
+                self._normalize(value) for value in mapping.required_states
+            }:
+                continue
+            if mapping.guide_id == guide_id:
+                return mapping.eligible_step_ids
+        return ()
+
+    def eligible_step(
+        self,
+        *,
+        product_id: str,
+        issue_intent: str,
+        current_state: str | None,
+        guide_id: str,
+        step_id: str,
+    ) -> GuideStep:
+        """Return one step only when the reviewed issue-state mapping permits it."""
+        eligible = self.eligible_step_ids(
+            product_id=product_id,
+            issue_intent=issue_intent,
+            current_state=current_state,
+            guide_id=guide_id,
+        )
+        if step_id not in eligible:
+            raise LookupError("Step is not eligible for the confirmed issue state.")
+        guide = self.guide(product_id, guide_id)
+        step = next(item for item in guide.steps if item.step_id == step_id)
+        if self._normalize(step.required_state) != self._normalize(current_state or ""):
+            raise LookupError("Step required state does not match the confirmed state.")
+        return step
+
     def manual_asset(
         self,
         product_id: str,
@@ -423,6 +470,22 @@ def load_reviewed_registry(root: Path) -> ReviewedRegistry:
             step_ids = {step.step_id for step in guide.steps}
             if not set(mapping.eligible_step_ids).issubset(step_ids):
                 raise ValueError("Issue mapping references an unknown guide step.")
+            eligible_steps = [
+                step
+                for step in guide.steps
+                if step.step_id in mapping.eligible_step_ids
+            ]
+            allowed_states = {
+                self_state.casefold()
+                for self_state in mapping.required_states
+            }
+            if any(
+                step.required_state.casefold() not in allowed_states
+                for step in eligible_steps
+            ):
+                raise ValueError(
+                    "Issue mapping includes a step with an ineligible required state."
+                )
             component_ids = set(component_map)
             mapped_components = set(mapping.required_component_ids) | set(
                 mapping.optional_component_ids
