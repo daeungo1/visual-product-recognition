@@ -258,7 +258,7 @@ Validation run: 2026-11-03, Sweden Central, existing resources unchanged.
 
 | Check | Result |
 |---|---|
-| Python tests | PASS, 118 tests |
+| Python tests | PASS, 122 tests |
 | Python lint | PASS |
 | Bicep build | PASS |
 | Hybrid issue live evaluation | PASS, six registered/candidate/unknown cases |
@@ -267,12 +267,13 @@ Validation run: 2026-11-03, Sweden Central, existing resources unchanged.
 | Candidate without model | Candidate and zero-shot mode correct |
 | Unknown product | Unknown and zero-shot locate-only mode correct |
 | Four-target issue | Three-target cap and truncation correct |
-| Deployed registered E2E | Resolve 200, two reviewed targets located |
+| Deployed registered E2E | Signed resolve 200, two reviewed targets located |
 | Deployed unknown E2E | Resolve 200, zero-shot target located, no instruction |
+| Authority gates | Tampered target metadata 422, ineligible step 422 |
 
-ACR remote build `dt6` produced `visual-guide-api:20261102-hybrid` with digest
-`sha256:dee75ecb0d112c82c7cbaf699e946f05a8530cf16904dd01f4c7272d6a24caed`.
-Container App revision `azapi5ovedhtoyg74w--0000010` is Healthy and receives
+ACR remote build `dt7` produced `visual-guide-api:20261103-hybrid-r1` with digest
+`sha256:7654b3f7e4cd1e6e99876d12332e960367ad5624d110ee60736144b9459056e6`.
+Container App revision `azapi5ovedhtoyg74w--0000011` is Healthy and receives
 100% traffic. The free-form mobile page, legacy reviewed routes and both hybrid
 support modes were verified against the deployed HTTPS endpoint.
 
